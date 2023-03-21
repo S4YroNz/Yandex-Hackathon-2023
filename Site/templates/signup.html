@@ -21,20 +21,37 @@
 
 <body>
     <div class="central_div">
-        <form class="float_panels" action="sign_up" method="post">
+        <form class="float_panels" action="" method="post">
+            {{form.hidden_tag()}}
             <div class="panel-group">
                 <div class="panel main_panel">
-                    <input class="input_padding" type="text" name="login" id="login" placeholder="Логин">
+                    {{ form.username(class="input_padding", type="text", id="login", placeholder="Логин") }}
+                    {% for error in form.username.errors %}
+                        <p class="alert alert-danger" role="alert">
+                            {{ error }}
+                        </p>
+                    {% endfor %}
                 </div>
                 <div class="panel">
-                    <input class="input_padding" type="text" name="password" id="password1" placeholder="Пароль">
+                    {{form.password(class="input_padding", type="text", id="password1", placeholder="Пароль")}}
+                    {% for error in form.password.errors %}
+                        <p class="alert alert-danger" role="alert">
+                            {{ error }}
+                        </p>
+                    {% endfor %}
                 </div>
                 <div class="panel">
-                    <input class="input_padding" type="text" name="password" id="password2" placeholder="Повторите пароль">
+                    {{ form.repeat_password(class="input_padding", type="text", id="password2", placeholder="Повторите пароль") }}
+                    {% for error in form.repeat_password.errors %}
+                        <p class="alert alert-danger" role="alert">
+                            {{ error }}
+                        </p>
+                    {% endfor %}
                 </div>
             </div>
-            <input type="submit" value="Зарегестрироваться">
+            {{ form.submit(type="submit", value="Зарегистрироваться") }}
         </form>
+        {{ message }}
     </div>
 </body>
 

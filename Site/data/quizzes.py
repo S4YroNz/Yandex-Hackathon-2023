@@ -1,9 +1,10 @@
 import sqlalchemy
 from .db_session import SqlAlchemyBase
 from sqlalchemy import orm
+from sqlalchemy_serializer import SerializerMixin
 
 
-class Quiz(SqlAlchemyBase):
+class Quiz(SqlAlchemyBase, SerializerMixin):
     __tablename__ = 'quiz'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
