@@ -1,0 +1,442 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Oswald:wght@200;300;400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: var(--main-text);
+}
+
+ul>li {
+    list-style-position: inside;
+}
+
+a {
+    text-decoration: none;
+    color: inherit
+}
+
+.debug {
+    outline: 1px solid rgba(255 0 0 / .3);
+}
+
+.debug * {
+    outline: 1px solid rgba(255 0 0 / .3);
+}
+
+html,
+body {
+    min-height: 100vh;
+    min-width: 100vw;
+}
+
+:root {
+    --alice-gradient: linear-gradient(to bottom left, #6525ff, #b12bff 60%);
+    --border-radius: 10px;
+    --clr-grey: #cccccc;
+    --clr-main: #b12bff;
+    --clr-main-darker: #7c1cb4;
+    --clr-yandex: #fc3d17;
+    --main-text: 'Montserrat', sans-serif;
+    --yandex-text: 'Oswald', sans-serif;
+}
+
+body {
+    display: flex;
+    background-color: #f0ecfb;
+}
+
+.central_div {
+    margin: 100px auto;
+    width: clamp(500px, 50vw, 1000px);
+    overflow: visible;
+}
+
+/* ~~~~~~~~~~~~~~~~Header~~~~~~~~~~~~~~~~~ */
+header {
+    position: fixed;
+    z-index: 10;
+    display: grid;
+    align-items: center;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+
+    width: 100%;
+    height: 80px;
+
+    background-color: white;
+    padding: 0 30px;
+    font-size: 2rem;
+    box-shadow: 0 0 2px 0 rgba(0 0 0 / .3);
+}
+
+header .skill_name {
+    font-family: var(--yandex-text);
+}
+
+header .skill_name span {
+    font-family: var(--yandex-text);
+    background: var(--clr-yandex);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+header .user_wrapper {
+    line-height: 1em;
+    font-family: var(--yandex-text);
+    font-weight: 300;
+    font-size: 1.4rem;
+    text-align: right;
+}
+
+header .user_wrapper a {
+    transition: .2s background-color ease;
+}
+
+header .user_wrapper a:hover {
+    background-color: rgba(0 0 0 / .1);
+}
+
+
+/* ~~~~~~~~~~~Панели~~~~~~~~~~~ */
+.float_panels {
+    display: flex;
+    overflow: visible;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.float_panels .panel {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+
+    font-family: var(--main-text);
+    background-color: white;
+    border: 1px solid var(--clr-grey);
+    border-radius: var(--border-radius);
+    box-shadow: 0 0 5px 0 rgba(0 0 0 / .1);
+}
+
+.panel .quiz {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--main-text);
+}
+
+.panel .quiz .quiz_title {
+    font-size: 1.2rem;
+    padding: 10px 20px;
+    padding-right: 0;
+    display: inline;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: "..";
+}
+
+.panel .quiz .edit_quiz {
+    display: flex;
+    padding: 20px;
+    color: white;
+    background: var(--clr-main);
+}
+
+
+/* ~~~~~~~~~Группа панелей~~~~~~~~~~ */
+.panel-group {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    overflow: visible;
+}
+
+.type_select {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.add_panel {
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 500;
+    padding: 10px;
+
+    color: var(--clr-main);
+    background-color: whitesmoke;
+    border-radius: var(--border-radius);
+    box-shadow: 0 0 0 0 var(--clr-main);
+    border: 1px solid var(--clr-main);
+    cursor: pointer;
+
+    transition: .1s ease;
+}
+
+.add_panel:hover {
+    background-color: var(--clr-main);
+    box-shadow: 0 0 4px 0 var(--clr-main);
+    color: white;
+}
+
+.panel-group .panel {
+    border-top: none;
+}
+
+.panel-group .panel:first-child {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.panel-group .panel:last-child {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.panel-group :not(:last-child, :first-child) {
+    border-radius: 0;
+}
+
+/* ~~~~~~~~~~Содержимое панелей~~~~~~~~~~ */
+.panel-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px 20px;
+    font-family: var(--main-text);
+}
+
+
+/* ~~~~~~Первой части формы~~~~~ */
+.panel.main_panel {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    overflow: visible;
+}
+
+.panel.main_panel::before {
+    content: "";
+
+    position: absolute;
+    width: 100%;
+    height: var(--border-radius);
+
+    background-color: var(--clr-main);
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+
+    top: calc(-1 * var(--border-radius));
+}
+
+.panel.main_panel .panel-content .title {
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.6rem;
+    word-wrap: break-word;
+}
+
+
+/* ~~~~~~~~~~~~~ Радио кнопки и чекбоксы ~~~~~~~~~~~~ */
+/* label {
+    display: flex;
+    align-items: center;
+    text-transform: capitalize;
+    gap: 10px
+} */
+
+/* :is(input[type="radio"], input[type="checkbox"]) {
+    width: 16px;
+    aspect-ratio: 1/1;
+    appearance: none;
+
+    border: 1px solid gray;
+    box-shadow: inset 0 0 0 0px black;
+    transition: .2s ease;
+}
+
+input[type="radio"] {
+    border-radius: 50%;
+}
+
+:is(input[type="radio"], input[type="checkbox"]):checked {
+    border-color: #b12bff;
+    box-shadow: inset 0 0 0 3.4px #b12bff;
+} */
+
+
+/* ~~~~~~~~~~~~~~ Однострочный текст ~~~~~~~~~~~~~ */
+.input_padding {
+    padding: 10px 10px;
+}
+
+input[type="text"] {
+    display: block;
+    font-size: 1.3rem;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+input[type="text"]#title {
+    text-align: center;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+/* ~~~~~~~~~~~~~~ Многострочный текст ~~~~~~~~~~~~~ */
+textarea {
+    width: 100%;
+    border: 1px solid var(--clr-grey);
+    resize: vertical;
+    font-size: 1.2rem;
+    font-weight: 400;
+    padding: 2px 4px;
+}
+
+
+/* ~~~~~~~~~~~~~~~~~~~~ Панель с вопросом ~~~~~~~~~~~~~~~~~~~ */
+.quiz_question {
+    font-size: 1.2rem !important;
+    font-weight: 400;
+    font-style: italic;
+}
+
+.quiz_answers {
+    position: relative;
+    display: flex;
+    gap: 5px;
+    flex-direction: column;
+}
+
+.quiz_answer {
+    margin: 2px 0;
+    display: flex;
+    pointer-events: visible;
+}
+
+.quiz_answer::before {
+    content: "";
+    background-color: var(--clr-grey);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: auto 5px;
+    pointer-events: all;
+
+    transition: .1s ease;
+}
+
+.quiz_answer:hover::before {
+    border-radius: 0;
+    height: 3px;
+    background-color: var(--clr-yandex);
+}
+
+.quiz_answer .quiz_answer-text {
+    font-size: 1rem;
+}
+
+.add_answer {
+    display: inline-block;
+    cursor: pointer;
+
+    width: 100%;
+    text-align: center;
+    background: whitesmoke;
+    color: var(--clr-main);
+    font-size: 1rem;
+    padding: 5px;
+    border: 1px solid var(--clr-main);
+    border-radius: calc(var(--border-radius) - 5px);
+}
+
+
+/* ~~~~~~~~~~~ Выбор типа Quiz'а ~~~~~~~~~~ */
+.quiz_type {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    aspect-ratio: 3/1;
+}
+
+.quiz_type input {
+    display: none;
+}
+
+.quiz_type label {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+
+.quiz_type label svg {
+    width: 100%;
+}
+
+
+/* Обычное состояние */
+.quiz_type label .profile {
+    fill: var(--clr-grey);
+    transition: .1s;
+}
+
+.quiz_type label .percent {
+    stroke: var(--clr-grey);
+    fill: var(--clr-grey);
+    transition: .1s;
+}
+
+/* Выбранное состояние */
+.quiz_type input:checked+label .profile {
+    fill: var(--clr-main-darker);
+}
+
+.quiz_type input:checked+label .percent {
+    stroke: var(--clr-main-darker);
+    fill: var(--clr-main-darker);
+}
+
+.quiz_type input:checked+label {
+    background-color: var(--clr-main);
+    transition: background-color .1s;
+}
+
+
+/* ~~~~~~~~~~~ Кнопка отправления, создания формы ~~~~~~~~~~ */
+:is(input[type="submit"], .create_quiz) {
+    font-family: var(--main-text);
+    font-weight: 500;
+    font-size: 1.2rem;
+
+    text-align: center;
+    border-radius: var(--border-radius);
+    margin-top: 20px;
+    border: 1px solid var(--clr-main);
+    cursor: pointer;
+    background: var(--clr-main);
+    color: white;
+    padding: 10px;
+    box-shadow: 0 0 4px 0 var(--clr-main);
+
+    transition: .2s ease;
+}
+
+:is(input[type="submit"], .create_quiz):hover {
+    border: 1px solid var(--clr-main);
+    color: var(--clr-main);
+    box-shadow: 0 0 0 0 var(--clr-main);
+    background-color: whitesmoke;
+}
+
+/* ~~~~~~~~~~~~~~~~~~~~ Фокус ~~~~~~~~~~~~~~~~~~ */
+* {
+    outline: 0px solid rgba(177, 43, 255, .5);
+    transition: outline .1s ease;
+}
+
+*:not(:is(textarea, input[type="text"])):focus-visible {
+    outline: 3px solid rgba(177, 43, 255, .5);
+}

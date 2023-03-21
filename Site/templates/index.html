@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="../static/css/style.css">
+        <title>ЯQuiz</title>
+    </head>
+    <header>
+        <a class="skill_name" href="/">
+            <span>Я</span>Quiz
+        </a>
+        <div class="user_wrapper">
+            <a href="/signin">
+                Вход
+            </a>
+             
+            <a href="/signup">
+                Регестрация
+            </a>
+        </div>
+    </header>
+
+    <body>
+        <div class="central_div float_panels">
+            <div class="panel main_panel">
+                <div class="panel-content">
+                    <p class="title">Ваши Quiz'ы</p>
+                </div>
+            </div>
+            <!-- TODO: подгрузка из БД Quiz'ов принадлежащий пользователю-->
+            <!-- Структура выглядит вот так: -->
+            <div class="panel">
+                <div class="quiz">
+                    <span class="quiz_title">Пример Quiz'а. Название выходит за рамки</span>
+                    <a class="edit_quiz" href="">Редактировать</a>
+                </div>
+            </div>
+            <!-- Конец структуры Quiz'а -->
+            <a class="create_quiz" href="createquiz.html">Создать Quiz</a>
+        </div>
+    </body>
+
+</html>
