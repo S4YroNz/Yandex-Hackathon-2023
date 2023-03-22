@@ -33,6 +33,7 @@ body {
 :root {
     --alice-gradient: linear-gradient(to bottom left, #6525ff, #b12bff 60%);
     --border-radius: 10px;
+    --border-radius-smaller: 6px;
     --clr-grey: #cccccc;
     --clr-main: #b12bff;
     --clr-main-darker: #7c1cb4;
@@ -158,7 +159,7 @@ header .user_wrapper a:hover {
     grid-template-columns: 1fr 1fr;
 }
 
-.add_panel {
+.addPanel {
     text-align: center;
     font-size: 1.1rem;
     font-weight: 500;
@@ -174,7 +175,7 @@ header .user_wrapper a:hover {
     transition: .1s ease;
 }
 
-.add_panel:hover {
+.addPanel:hover {
     background-color: var(--clr-main);
     box-shadow: 0 0 4px 0 var(--clr-main);
     color: white;
@@ -201,6 +202,7 @@ header .user_wrapper a:hover {
 /* ~~~~~~~~~~Содержимое панелей~~~~~~~~~~ */
 .panel-content {
     display: flex;
+    position: relative;
     flex-direction: column;
     gap: 10px;
     padding: 15px 20px;
@@ -237,32 +239,22 @@ header .user_wrapper a:hover {
 }
 
 
-/* ~~~~~~~~~~~~~ Радио кнопки и чекбоксы ~~~~~~~~~~~~ */
-/* label {
-    display: flex;
-    align-items: center;
-    text-transform: capitalize;
-    gap: 10px
-} */
-
-/* :is(input[type="radio"], input[type="checkbox"]) {
-    width: 16px;
-    aspect-ratio: 1/1;
+/* ~~~~~~~~~~~~~ Радио кнопки ~~~~~~~~~~~~ */
+input[type="radio"] {
+    min-width: 16px;
+    height: 16px;
     appearance: none;
 
+    border-radius: 50%;
     border: 1px solid gray;
     box-shadow: inset 0 0 0 0px black;
     transition: .2s ease;
 }
 
-input[type="radio"] {
-    border-radius: 50%;
-}
-
-:is(input[type="radio"], input[type="checkbox"]):checked {
+input[type="radio"]:checked {
     border-color: #b12bff;
     box-shadow: inset 0 0 0 3.4px #b12bff;
-} */
+}
 
 
 /* ~~~~~~~~~~~~~~ Однострочный текст ~~~~~~~~~~~~~ */
@@ -302,24 +294,25 @@ textarea {
     font-style: italic;
 }
 
-.quiz_answers {
+.input_list {
     position: relative;
     display: flex;
     gap: 5px;
     flex-direction: column;
 }
 
-.quiz_answer {
+.input_list-element {
     margin: 2px 0;
     display: flex;
+    align-items: center;
     pointer-events: visible;
 }
 
-.quiz_answer::before {
+.input_list-element::before {
     content: "";
     background-color: var(--clr-grey);
-    width: 10px;
-    height: 10px;
+    min-width: 10px;
+    min-height: 10px;
     border-radius: 50%;
     margin: auto 5px;
     pointer-events: all;
@@ -327,17 +320,17 @@ textarea {
     transition: .1s ease;
 }
 
-.quiz_answer:hover::before {
+.input_list-element:hover::before {
     border-radius: 0;
-    height: 3px;
+    min-height: 3px;
     background-color: var(--clr-yandex);
 }
 
-.quiz_answer .quiz_answer-text {
+.input_list-element .input_list-element-text {
     font-size: 1rem;
 }
 
-.add_answer {
+.addRow {
     display: inline-block;
     cursor: pointer;
 
@@ -348,7 +341,7 @@ textarea {
     font-size: 1rem;
     padding: 5px;
     border: 1px solid var(--clr-main);
-    border-radius: calc(var(--border-radius) - 5px);
+    border-radius: var(--border-radius-smaller);
 }
 
 
@@ -389,6 +382,10 @@ textarea {
     transition: .1s;
 }
 
+.quiz_type label .percent-scale {
+    transform: scale(1.2) translate(-8%, -8%);
+}
+
 /* Выбранное состояние */
 .quiz_type input:checked+label .profile {
     fill: var(--clr-main-darker);
@@ -404,6 +401,24 @@ textarea {
     transition: background-color .1s;
 }
 
+
+/* ~~~~~~~~~~~ Персонажи ~~~~~~~~~~ */
+.person_type_selected .panel-content span {
+    font-size: 1.2rem;
+    font-style: italic;
+}
+
+.quiz_panel .person_select {
+    min-width: 100px;
+    border: 1px solid var(--clr-main);
+    border-radius: var(--border-radius-smaller);
+    padding: 2px 5px;
+    background-color: transparent;
+}
+
+.quiz_panel {
+    overflow: visible !important;
+}
 
 /* ~~~~~~~~~~~ Кнопка отправления, создания формы ~~~~~~~~~~ */
 :is(input[type="submit"], .create_quiz) {
