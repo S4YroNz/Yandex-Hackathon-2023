@@ -1,3 +1,5 @@
+import os
+import json
 from flask import Flask, render_template, redirect, abort, request
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_restful import abort, Api
@@ -26,8 +28,8 @@ def load_user(user_id):
 
 @app.route('/')
 def index():
-    # отображаем все доступные квизы
-    # по хорошему еще нужны:
+    # отображаем все доступные квизы ( по сколько-то на страничу, потом догружаем)
+    # по хорошему нужны:
     # поиск
     # раделение по жанрам
     # навигация
@@ -88,10 +90,35 @@ def create_quiz():
     form = QuizForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
-        quiz = QuizForm()
+        quiz = Quiz()
+        quiz.creator = current_user.id
+        quiz.type = form.type.data
+        quiz.title = form.title.data
+        quiz.description = form.description.data
 
-        # params of quiz
-        # здесь же создание json файла
+        # каким-то макаром парсим все наши вопросы и персонажей
+        quiz_json = {
+            'characters': [field.data for field in form.characters],
+            'questions': []
+        }
+        for formfield in form.questions:
+            question_json = {
+                'question': formfield.question.data,
+                'answers': []
+            }
+            for field in formfield.answers:
+                answer_json = {
+                    'answer': field.answer.data,
+                    'characters': field.characters.data  # проверить
+                }
+                question_json['answers'].append(answer_json)
+            quiz_json['questions'].append(question_json)
+
+        name_file = '' # формируем на основе id название json-файла
+        # запихиваем туда спарсенные вопросы
+        with open(name_file, 'w') as file:
+            json.dump(quiz_json, file)
+        quiz.content_file = name_file
 
         current_user.quizzes.append(quiz)
         db_sess.merge(current_user)
@@ -113,7 +140,15 @@ def edit_quiz(id):
         if quiz:
             # переносим все данные квиза в соответствующие поля
             # + берем из json
+            form.type.data = quiz.type
             form.title.data = quiz.title
+            form.description.data = quiz.description
+            name_file = quiz.content_file
+            with open(name_file, 'w') as file:
+                quiz_json = json.load(file)
+            # берем json файл и каким то макаром переносим список персонажей
+            # и каждый вопрос в свой блок
+
         else:
             abort(404)
     if form.validate_on_submit():
@@ -122,9 +157,31 @@ def edit_quiz(id):
                                           Quiz.user == current_user
                                           ).first()
         if quiz:
+            quiz.type = form.type.data
             quiz.title = form.title.data
-            # фиксируем в бд все изменения из полей
-            # перезаписываем json
+            quiz.description = form.description.data
+            # каким-то макаром парсим все наши вопросы и персонажей
+            quiz_json = {
+                'characters': [field.data for field in form.characters],
+                'questions': []
+            }
+            for formfield in form.questions:
+                question_json = {
+                    'question': formfield.question.data,
+                    'answers': []
+                }
+                for field in formfield.answers:
+                    answer_json = {
+                        'answer': field.answer.data,
+                        'characters': field.characters.data  # проверить получаются ли так нужные данные списком
+                    }
+                    question_json['answers'].append(answer_json)
+                quiz_json['questions'].append(question_json)
+
+            name_file = quiz.content_file
+            with open(name_file, 'w') as file:
+                json.dump(quiz_json, file)  # перезаписываем json
+
             db_sess.commit()
             return redirect('/')
         else:
@@ -143,6 +200,7 @@ def delete_quiz(id):
                                       Quiz.user == current_user
                                       ).first()
     if quiz:
+        os.remove(f'/путь/{quiz.content_file}')  # дописать путь
         db_sess.delete(quiz)
         db_sess.commit()
     else:
@@ -152,8 +210,8 @@ def delete_quiz(id):
 
 def main():
     db_session.global_init('db/ya_quiz.db')
-    api.add_resource(quizzes_resources.QuizResource, "api/quiz")
-    api.add_resource(quizzes_resources.QuizListResource, "api/quiz/<int:quiz_id>")
+    api.add_resource(quizzes_resources.QuizResource, "/api/quiz")
+    api.add_resource(quizzes_resources.QuizListResource, "/api/quiz/<int:quiz_id>")
     app.run(port=8080, host='127.0.0.1')
 
 # TODO: база данных аккаунтов вида
