@@ -32,15 +32,15 @@ def handle_dialog(req, res):
     user_id = req['session']['user_id']
     user_answer = req['request']['original_utterance'].lower()
     if req['session']['new']:
-        sessionStorage['user_id']['status'] = 'start'
+        sessionStorage[user_id]['status'] = 'start'
         greet = greeting()
         res['response']['text'] = greet['text']
         res['response']['buttons'] = greet['buttons']
         return
-    if sessionStorage['user_id']['status'] == 'start':
+    if sessionStorage[user_id]['status'] == 'start':
 
         if user_answer == "да, давай":
-            random_quiz()
+            random_quiz(user_id)
             passing_the_quiz()
         elif user_answer == 'нет':
             res['response']['text'] = 'Хорошо, тогда можешь посмотреть топ викторин'
@@ -48,23 +48,23 @@ def handle_dialog(req, res):
         else:
             res['response']['text'] = unrecognized_phrase()['text']
         return
-    if sessionStorage['user_id']['status'] == 'passing_the_quiz':
+    if sessionStorage[user_id]['status'] == 'passing_the_quiz':
         if user_answer in ['выход', 'стоп']:
             res['response']['text'] = 'Хорошо, выхожу из викторины'
-            sessionStorage['user_id']['status'] = 'idling'
+            sessionStorage[user_id]['status'] = 'idling'
         else:
             passing_the_quiz()
         return
-    if sessionStorage['user_id']['status'] == 'idling':
+    if sessionStorage[user_id]['status'] == 'idling':
         if user_answer == 'выведи топ викторин':
             show_top()
         elif 'запусти викторину' in user_answer:
-            sessionStorage['user_id']['current_quiz'] = user_answer.split('запусти викторину')[-1].strip()
-            sessionStorage['user_id']['status'] = 'passing_the_quiz'
-            sessionStorage['user_id']['current_question'] = 0
+            sessionStorage[user_id]['current_quiz'] = user_answer.split('запусти викторину')[-1].strip()
+            sessionStorage[user_id]['status'] = 'passing_the_quiz'
+            sessionStorage[user_id]['current_question'] = 0
             passing_the_quiz()
         elif user_answer == 'запусти случайную викторину':
-            random_quiz()
+            random_quiz(user_id)
         elif user_answer == 'я хочу создать викторину':
             create_quiz()
         elif user_answer == 'что ты можешь?':
@@ -119,11 +119,11 @@ def show_top():
 def passing_the_quiz():
     # TODO: Прохождение квиза
     return
-def random_quiz():
-    sessionStorage['user_id']['status'] = 'passing_the_quiz'
+def random_quiz(user_id):
+    sessionStorage[user_id]['status'] = 'passing_the_quiz'
     # TODO: Выбор рандомного квиза
-    sessionStorage['user_id']['current_quiz'] = 'quiz_name'
-    sessionStorage['user_id']['current_question'] = 0
+    sessionStorage[user_id]['current_quiz'] = 'quiz_name'
+    sessionStorage[user_id]['current_question'] = 0
     return
 
 
