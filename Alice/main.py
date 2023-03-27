@@ -1,6 +1,8 @@
+import random
 
 from flask import Flask, request, jsonify
 import logging
+import requests
 
 
 app = Flask(__name__)
@@ -32,6 +34,7 @@ def handle_dialog(req, res):
     user_id = req['session']['user_id']
     user_answer = req['request']['original_utterance'].lower()
     if req['session']['new']:
+        sessionStorage['quizzes'] = requests.get('http://адрес нашего сайта/api/quiz').json()['quiz']
         sessionStorage[user_id]['status'] = 'start'
         greet = greeting()
         res['response']['text'] = greet['text']
@@ -41,7 +44,7 @@ def handle_dialog(req, res):
 
         if user_answer == "да, давай":
             random_quiz(user_id)
-            passing_the_quiz()
+            passing_the_quiz(req, res)
         elif user_answer == 'нет':
             res['response']['text'] = 'Хорошо, тогда можешь посмотреть топ викторин'
             res['response']['card'] = show_top()['card']
@@ -64,7 +67,7 @@ def handle_dialog(req, res):
             res['response']['text'] = 'Хорошо, выхожу из викторины'
             sessionStorage[user_id]['status'] = 'idling'
         else:
-            passing_the_quiz()
+            passing_the_quiz(req, res)
         return
     if sessionStorage[user_id]['status'] == 'idling':
         if user_answer == 'выведи топ викторин':
@@ -73,7 +76,7 @@ def handle_dialog(req, res):
             sessionStorage[user_id]['current_quiz'] = user_answer.split('запусти викторину')[-1].strip()
             sessionStorage[user_id]['status'] = 'passing_the_quiz'
             sessionStorage[user_id]['current_question'] = 0
-            passing_the_quiz()
+            passing_the_quiz(req, res)
         elif user_answer == 'запусти случайную викторину':
             random_quiz(user_id)
         elif user_answer == 'я хочу создать викторину':
@@ -121,8 +124,12 @@ def get_idle_suggests():
          ]
      }
     return result
+
+
 def create_quiz():
     return
+
+
 def unrecognized_phrase():
     result = {
         'text': 'Извини, я тебя не поняла, повтори пожалуйста'
@@ -157,17 +164,81 @@ def show_top():
     return result
 
 
-def passing_the_quiz():
-    # TODO: Прохождение квиза
+def passing_the_quiz(req, res):
+    # TODO: загрузку фото и кнопки вариантов ответов
+    # Для прохождения нужно id квиза и № вопроса
+    # Храним их в sessionStorage
+    user_id = req['session']['user_id']
+    session = sessionStorage[user_id]
+    quiz_id = ['current_quiz']
+    quest_numb = session['current_question']
+    quiz = sessionStorage['quizzes'][quiz_id]
+    if quest_numb == 0:
+        res['response']['text'] = f"""{quiz['title']}\n\n{quiz['description']}\n от {quiz['creator']}"""
+        res['response']['card'] = {}
+        res['response']['card']['type'] = 'BigImage'
+        res['response']['card']['title'] = 'Где выводится это сообщение?'
+        res['response']['card']['image_id'] = 'id картинки'
+        if quiz['type'] == 'percent':
+            session['result'] = 0
+        else:
+            session['result'] = {}
+            for pers in quiz['characters']:
+                session['result'][pers['title']] = 0
+    elif quest_numb <= len(quiz['questions']):
+        question = quiz['questions'][quest_numb - 1]
+        answers = '\n'.join([f"{i + 1}. {value['title']}" for i, value in question['answers']])
+        res['response']['text'] = f"""{question['title']}\n\n{answers}"""
+    else:
+        if quiz['type'] == 'person':
+            result = max(session['result'].values())
+            for key, value in session['result'].items():
+                if value == result:
+                    result = key
+                    break
+            result = list(filter(lambda x: x['title'] == result, quiz['characters']))[0]
+            res['response']['text'] = f"""Поздравляем! Вы - {result['title']}!\n{result['description']}"""
+            res['response']['card'] = {}
+            res['response']['card']['type'] = 'BigImage'
+            res['response']['card']['title'] = 'Ваш персонаж'
+            res['response']['card']['image_id'] = 'id картинки'
+        else:
+            res['response']['text'] = f"""Поздравляем! Вы ответили правильно на {int(100 * session['result'] / len(quiz['questions']))}%"""
+
+    if 1 <= quest_numb <= len(quiz['questions']):
+        answer = int(req['request']['original_utterance']) # id + 1 ответа
+        if quiz['type'] == 'percent':
+            if quiz['questions'][quest_numb - 2]['answers'][answer - 1]['is_true']:
+                session['result'] += 1
+        else:
+            for pers in quiz['questions'][quest_numb - 2]['answers'][answer - 1]['characters']:
+                session['result'][pers] += 1
+
+    session['current_question'] += 1
+    sessionStorage[user_id] = session
     return
 
 
 def random_quiz(user_id):
     sessionStorage[user_id]['status'] = 'passing_the_quiz'
-    # TODO: Выбор рандомного квиза
-    sessionStorage[user_id]['current_quiz'] = 'quiz_name'
+    sessionStorage[user_id]['current_quiz'] = random.randint(0, len(sessionStorage['quizzes']))
     sessionStorage[user_id]['current_question'] = 0
     return
+
+
+def download_image_by_bits(image_bits):
+    alice_url = 'https://dialogs.yandex.net/api/v1/skills/a9331dba-12d5-41be-ba3b-d691a6294153/images'
+    headers = {'Authorization': 'OAuth y0_AgAAAAAhKRZBAAT7owAAAADfkTMUOctm8BgkQU-3pQ8X_Vd5UK3G1qw'}
+    files = {'file': image_bits}
+    req = requests.post(url=alice_url, headers=headers, files=files)
+    return req.json()
+
+
+def delete_image(image_id):
+    alice_url = f'https://dialogs.yandex.net/api/v1/skills/a9331dba-12d5-41be-ba3b-d691a6294153/images/{image_id}'
+    headers = {'Authorization': 'OAuth y0_AgAAAAAhKRZBAAT7owAAAADfkTMUOctm8BgkQU-3pQ8X_Vd5UK3G1qw'}
+    req = requests.delete(url=alice_url, headers=headers)
+    return req.json()
 
 
 def greeting():
