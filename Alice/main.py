@@ -45,6 +45,17 @@ def handle_dialog(req, res):
         elif user_answer == 'нет':
             res['response']['text'] = 'Хорошо, тогда можешь посмотреть топ викторин'
             res['response']['card'] = show_top()['card']
+        elif user_answer == 'что ты можешь?':
+            res['response']['text'] = '''Я могу запустить случайную или выбранную тобой викторину, 
+            могу вывести топ самых проходимых. А если ты не нашел той викторины, которую хотел пройти,  
+            можешь сам ее создать'''
+            res['response']['buttons'] = get_idle_suggests()
+            sessionStorage[user_id]['status'] = 'idling'
+        elif user_answer == 'расскажи правила' or user_answer == 'помощь':
+            res['response']['text'] = '''Викторины состоят из нескольких вопросов, в ответ на каждый ты
+             можешь выбрать один вариант из нескольких предложенных. Ответив на каждый вопрос, ты узнаешь результат'''
+            res['response']['buttons'] = get_idle_suggests()
+            sessionStorage[user_id]['status'] = 'idling'
         else:
             res['response']['text'] = unrecognized_phrase()['text']
         return
@@ -79,7 +90,35 @@ def handle_dialog(req, res):
 
 def get_idle_suggests():
     result = {
-         'buttons': []
+         'buttons': [
+        {
+            "title": "Выведи топ викторин",
+            "payload": {},
+            "hide": True
+        },
+             {
+                 "title": "Запусти случайную викторину",
+                 "payload": {},
+                 "hide": True
+             },
+             {
+                 "title": "Я хочу создать викторину",
+                 "payload": {},
+                 "hide": True
+             },
+             {
+                 "title": "Что ты можешь?",
+                 "payload": {},
+                 "hide": True
+             },
+             {
+                 "title": "Расскажи правила",
+                 "payload": {},
+                 "hide": True
+             }
+
+
+         ]
      }
     return result
 def create_quiz():
