@@ -93,7 +93,7 @@ def create_quiz():
         quiz = Quiz()
         quiz.creator = current_user.id
         quiz.type = form.type.data
-        quiz.title = form.title.data
+        quiz.title = form.quiz_title.data
         quiz.description = form.description.data
 
         # каким-то макаром парсим все наши вопросы и персонажей
@@ -103,18 +103,18 @@ def create_quiz():
         }
         for formfield in form.questions:
             question_json = {
-                'question': formfield.question.data,
+                'title': formfield.question.data,
                 'answers': []
             }
             for field in formfield.answers:
                 answer_json = {
-                    'answer': field.answer.data,
+                    'title': field.answer.data,
                     'characters': field.characters.data  # проверить
                 }
                 question_json['answers'].append(answer_json)
             quiz_json['questions'].append(question_json)
 
-        name_file = '' # формируем на основе id название json-файла
+        name_file = f'/quizzes/quiz_data{quiz.id}_{quiz.title}' # формируем на основе id название json-файла
         # запихиваем туда спарсенные вопросы
         with open(name_file, 'w') as file:
             json.dump(quiz_json, file)

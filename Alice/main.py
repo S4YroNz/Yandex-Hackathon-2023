@@ -155,9 +155,13 @@ def show_top():
 
     }
     return result
+
+
 def passing_the_quiz():
     # TODO: Прохождение квиза
     return
+
+
 def random_quiz(user_id):
     sessionStorage[user_id]['status'] = 'passing_the_quiz'
     # TODO: Выбор рандомного квиза

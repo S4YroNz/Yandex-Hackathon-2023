@@ -33,13 +33,16 @@
     <div class="central_div">
         <form action="createquiz/post" method="post" class="float_panels">
             <div class="panel main_panel">
-                <div class="panel-content">
-                    <input type="text" name="quiz_title" id="title" placeholder="Название вашего Quiz'а">
-                    <textarea name="desctiption" name="quiz_description" id="desctiption" rows="5"
-                        placeholder="Описание вашего Quiz'а"></textarea>
+                <div class="panel-content"> <!--  -->
+                    <!-- <input type="text" name="quiz_title" id="title" placeholder="Название вашего Quiz'а"> --> <!-- название -->
+                    {{ form.quiz_title(type="text", id="title", placeholder="Название вашего Quiz'а") }}
+                    <!-- <textarea name="desctiption" name="quiz_description" id="desctiption" rows="5"
+                        placeholder="Описание вашего Quiz'а"></textarea> описание -->
+                    {{ form.description(id="desctiption", rows="5", placeholder="Описание вашего Quiz'а") }}
                     <div class="input-file-group">
                         <label for="file" class="input-file">
-                            <input type="file" id="file" name="quiz_background" accept=".png, .jpg, .jpeg">
+                            <!-- <input type="file" id="file" name="quiz_preview" accept=".png, .jpg, .jpeg"> файл превью -->
+                            {{ form.quiz_preview(type="file", id="file", accept=".png, .jpg, .jpeg") }}
                             <span>
                                 <b id="choose">Выберите</b> <span class="dragAndDropEnabled">или перетащите</span> файл
                                 | Максимум 2мб.
@@ -71,7 +74,8 @@
             <div class="panel">
                 <div class="type_select">
                     <div class="quiz_type">
-                        <input type="radio" name="quiz_type" id="person" class="quiz_type" checked="true">
+                        <!-- <input type="radio" name="quiz_type" id="person" class="quiz_type" checked="true"> тип квиза -->
+                        {{ form.quiz_type(type="radio", id="person", class="quiz_type", checked="true") }}
                         <label for="person">
                             <svg viewBox="-2.4 -2.4 28.80 28.80" xmlns="http://www.w3.org/2000/svg" width="100px">
                                 <path class="profile"
@@ -129,7 +133,8 @@
             <button class="addPanel" form="">
                 Добавить панель
             </button>
-            <input type="submit" value="Создать">
+            <!-- <input type="submit" value="Создать">  -->
+            {{ form.submit(type="submit", value="Создать") }}
         </form>
     </div>
     <script src="../static/js/script.js"></script>

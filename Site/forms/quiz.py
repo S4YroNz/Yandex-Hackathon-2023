@@ -1,8 +1,14 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, BooleanField, SubmitField
-from wtforms import SelectMultipleField, FieldList, Field, FormField, Form
+from wtforms import SelectMultipleField, FieldList, Field, FormField, Form, FileField
 from wtforms.fields.html5 import EmailField, TelField, SearchField, URLField
 from wtforms.validators import DataRequired
+
+
+class CharacterForm(FlaskForm):
+    name = StringField('Имя', validators=[DataRequired()])
+    description = TextAreaField('Описание', validators=[DataRequired()])
+    photo = FileField('Изображение')  # добавить проверку на разширение, размер
 
 
 class AnswerForm(Form):
@@ -18,12 +24,12 @@ class QuestionForm(Form):
 
 
 class QuizForm(FlaskForm):
-    title = StringField('Название', validators=[DataRequired()])
-    type = BooleanField('Тип теста', validators=[DataRequired()])
+    quiz_title = StringField('Название', validators=[DataRequired()])
+    quiz_preview = FileField("Заставка теста")  # + фото
+    quiz_type = BooleanField('Тип теста', validators=[DataRequired()])
     description = TextAreaField('Описание теста', validators=[DataRequired()])
 
-    # ?????????????
     characters = FieldList(StringField('персонаж'))
-    questions = FieldList(FormField(QuestionForm))
+    questions = FieldList(FormField(QuestionForm, separator='-'))
 
     submit = SubmitField('Создать')

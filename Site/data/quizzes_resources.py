@@ -18,8 +18,9 @@ class QuizResource(Resource):
         abort_if_quiz_not_found(quiz_id)
         session = db_session.create_session()
         quiz = session.query(Quiz).get(quiz_id)
-        return jsonify({'quiz': quiz.to_dict(
-            only=('title', ...))})  # оставляем нужные параметры
+        with open(quiz.content_file) as file:
+            return file
+        #return jsonify({'quiz': quiz.to_dict(only=('id', 'title', 'description', 'creator', 'type', 'modified_date', ...))})   оставляем нужные параметры
 
     def delete(self, quiz_id):
         abort_if_quiz_not_found(quiz_id)
