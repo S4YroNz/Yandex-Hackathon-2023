@@ -26,7 +26,7 @@ class User:
 
 sessionStorage: Dict[str, User] = {}
 
-phraseVariables = json.load(open('phraseVariable.json','r'))
+phraseVariables = json.load(open('phraseVariable.json', 'r'))
 with open('all_quizzes.json', encoding='utf-8') as file:
     quizzes = json.load(file)['quizzes']
 
@@ -35,7 +35,7 @@ class _nlu:
     def __init__(self, r: dict):
         self.tokens: list[str] = r['tokens']
         self.entities: list[dict] = r['entities']
-        self.intents : list[dict] = r['intents']
+        self.intents: list[dict] = r['intents']
 
 
 class _sessionUser:
@@ -128,7 +128,6 @@ def handle_dialog(req: Req, res):
         sessionStorage[user_id] = User(user_id)
         send_greetings(res)
         return
-    sessionStorage[user_id].requests += 1
 
     tokens = req.request.nlu.tokens
     print(sessionStorage[user_id].isNew, sessionStorage[user_id].inQuiz)
@@ -139,10 +138,12 @@ def handle_dialog(req: Req, res):
             sessionStorage[user_id].inQuiz = True
             sessionStorage[user_id].quizId = random.randint(0, len(sessionStorage))
             send_quizSuggests(res)
+            sessionStorage[user_id].isNew = False
             return
         elif 'YANDEX.REJECT' in user_answer:
             res['response']['text'] = 'Хорошо, тогда можешь посмотреть топ викторин'
             send_idleSuggests(res)
+            sessionStorage[user_id].isNew = False
             return
 
     if sessionStorage[user_id].inQuiz:
@@ -160,7 +161,7 @@ def handle_dialog(req: Req, res):
                 sessionStorage[user_id].quizResult['true'] = 0
             else:
                 for pers in quiz['characters']:
-                    sessionStorage[user_id].quizResult[pers['title']] = 0
+                    sessionStorage[user_id].quizResult[pers['name']] = 0
             res['response']['buttons'] = [
                 {
                     "title": "Начать!",
@@ -192,7 +193,7 @@ def handle_dialog(req: Req, res):
                     sessionStorage[user_id].quizResult['true'] += 1
             else:
                 for pers in quiz['questions'][sessionStorage[user_id].questionId - 2]['answers'][answer - 1]['characters']:
-                    sessionStorage[user_id].quizResult[pers] += 1
+                    sessionStorage[user_id].quizResult[pers['name']] += 1
             if 1 <= sessionStorage[user_id].questionId <= len(quiz['questions']):
                 question = quiz['questions'][sessionStorage[user_id].questionId - 1]
                 answers = '\n'.join(
@@ -209,11 +210,11 @@ def handle_dialog(req: Req, res):
                             result = key
                             break
                     result = list(
-                        filter(lambda x: x['title'] == result, quiz['characters']))[0]
-                    res['response']['text'] = f"""Поздравляем! Вы - {result['title']}!\n{result['description']}"""
+                        filter(lambda x: x['name'] == result, quiz['characters']))[0]
+                    res['response']['text'] = f"""Поздравляем! Вы - {result['name']}!\n{result['description']}"""
                     res['response']['card'] = {}
                     res['response']['card']['type'] = 'BigImage'
-                    res['response']['card']['title'] = result['title']
+                    res['response']['card']['title'] = result['name']
                     res['response']['card']['image_id'] = result['photo']
                 else:
                     res['response'][
@@ -337,72 +338,6 @@ def send_greetings(res):
 
 def send_error(res):
     res['response']['text'] = "Извини, я не поняла, повтори пожалуйста"
-
-
-def passing_the_quiz(req, res):
-    # TODO: загрузку фото и кнопки вариантов ответов
-    # Для прохождения нужно id квиза и № вопроса
-    # Храним их в sessionStorage
-    user_id = req['session']['user_id']
-    session = sessionStorage[user_id]
-    quiz_id = ['current_quiz']
-    quest_numb = session['current_question']
-    quiz = sessionStorage['quizzes'][quiz_id]
-    if quest_numb == 0:
-        res['response']['text'] = f"""{quiz['title']}\n\n{quiz['description']}\n от {quiz['creator']}"""
-        res['response']['card'] = {}
-        res['response']['card']['type'] = 'BigImage'
-        res['response']['card']['title'] = 'Где выводится это сообщение?'
-        res['response']['card']['image_id'] = 'id картинки'
-        if quiz['type'] == 'percent':
-            session['result'] = 0
-        else:
-            session['result'] = {}
-            for pers in quiz['characters']:
-                session['result'][pers['title']] = 0
-    elif quest_numb <= len(quiz['questions']):
-        question = quiz['questions'][quest_numb - 1]
-        answers = '\n'.join(
-            [f"{i + 1}. {value['title']}" for i, value in question['answers']])
-        res['response']['text'] = f"""{question['title']}\n\n{answers}"""
-    else:
-        if quiz['type'] == 'person':
-            result = max(session['result'].values())
-            for key, value in session['result'].items():
-                if value == result:
-                    result = key
-                    break
-            result = list(
-                filter(lambda x: x['title'] == result, quiz['characters']))[0]
-            res['response']['text'] = f"""Поздравляем! Вы - {result['title']}!\n{result['description']}"""
-            res['response']['card'] = {}
-            res['response']['card']['type'] = 'BigImage'
-            res['response']['card']['title'] = 'Ваш персонаж'
-            res['response']['card']['image_id'] = 'id картинки'
-        else:
-            res['response'][
-                'text'] = f"""Поздравляем! Вы ответили правильно на {int(100 * session['result'] / len(quiz['questions']))}%"""
-
-    if 1 <= quest_numb <= len(quiz['questions']):
-        answer = int(req['request']['original_utterance'])  # id + 1 ответа
-        if quiz['type'] == 'percent':
-            if quiz['questions'][quest_numb - 2]['answers'][answer - 1]['is_true']:
-                session['result'] += 1
-        else:
-            for pers in quiz['questions'][quest_numb - 2]['answers'][answer - 1]['characters']:
-                session['result'][pers] += 1
-
-    session['current_question'] += 1
-    sessionStorage[user_id] = session
-    return
-
-
-def random_quiz(user_id):
-    sessionStorage[user_id]['status'] = 'passing_the_quiz'
-    sessionStorage[user_id]['current_quiz'] = random.randint(
-        0, len(sessionStorage['quizzes']))
-    sessionStorage[user_id]['current_question'] = 0
-    return
 
 
 def download_image_by_bits(image_bits):
