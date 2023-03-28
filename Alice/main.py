@@ -3,10 +3,12 @@ from flask import Flask, request, jsonify
 from typing import Dict
 from wordVariations import VARIATIONS
 import logging
-import requests
+import requests as requests_lib
 import json
 
+
 app = Flask(__name__)
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -24,6 +26,7 @@ class User:
 
 sessionStorage: Dict[str, User] = {}
 
+phraseVariables = json.load(open('phraseVariable.json','r'))
 with open('all_quizzes.json', encoding='utf-8') as file:
     quizzes = json.load(file)['quizzes']
 
@@ -32,6 +35,7 @@ class _nlu:
     def __init__(self, r: dict):
         self.tokens: list[str] = r['tokens']
         self.entities: list[dict] = r['entities']
+        self.intents : list[dict] = r['intents']
 
 
 class _sessionUser:
@@ -119,7 +123,7 @@ def check_tokens(tokens, variation):
 
 def handle_dialog(req: Req, res):
     user_id = req.session.user_id
-    user_answer = req['request']['nlu']['intents']
+    user_answer = req.request.nlu.intents
     if req.session.new:
         sessionStorage[user_id] = User(user_id)
         send_greetings(res)
@@ -131,7 +135,7 @@ def handle_dialog(req: Req, res):
 
     if sessionStorage[user_id].isNew:
         if 'YANDEX.CONFIRM' in user_answer:
-            res['response']['text'] = 'Начинаю случайную викторину'
+            res['response']['text'] = random.choice(phraseVariables['start_random_quiz'])
             sessionStorage[user_id].inQuiz = True
             sessionStorage[user_id].quizId = random.randint(0, len(sessionStorage))
             send_quizSuggests(res)
@@ -165,12 +169,12 @@ def handle_dialog(req: Req, res):
             ]
             return
         if 'STOP' in user_answer:
-            res['response']['text'] = 'Хорошо, выхожу из викторины'
+            res['response']['text'] = random.choice(phraseVariables['exit_from_quiz'])
             sessionStorage[user_id].inQuiz = False
             send_idleSuggests(res)
             return
         if 'YANDEX.REPEAT' in user_answer:
-            res['response']['text'] = 'Повторяю вопрос'
+            res['response']['text'] = random.choice(phraseVariables['repeat_question'])
             send_quizSuggests(res)
             return
         if 'YANDEX.CONFIRM' in user_answer:  # sessionStorage[user_id].questionId == 1:
@@ -221,23 +225,23 @@ def handle_dialog(req: Req, res):
     if not sessionStorage[user_id].inQuiz:
         if sessionStorage[user_id].justFinished:
             if 'YANDEX.REPEAT' in user_answer:
-                res['response']['text'] = 'Запускаю эту же викторину заново'
+                res['response']['text'] = random.choice(phraseVariables['repeat_quiz'])
                 sessionStorage[user_id].justFinished = False
                 sessionStorage[user_id].inQuiz = True
                 send_idleSuggests(res)
                 return
         if 'SHOW_TOP' in user_answer:
-            res['response']['text'] = 'Вывела топ викторин'
+            res['response']['text'] =random.choice(phraseVariables['show_top'])
             send_idleSuggests(res)
             return
         if 'START_RANDOM_QUIZ' in user_answer:
-            res['response']['text'] = 'Начинаю случайную викторину'
+            res['response']['text'] = random.choice(phraseVariables['start_random_quiz'])
             sessionStorage[user_id].inQuiz = True
             sessionStorage[user_id].quizId = random.randint(0, len(sessionStorage))
             send_quizSuggests(res)
             return
         if 'CREATE_QUIZ' in user_answer:
-            res['response']['text'] = 'Чтобы создать викторину, перейдите по ссылке. Удачи сделать классную викторину!'
+            res['response']['text'] = random.choice(phraseVariables['create_quiz'])
             send_idleSuggests(res)
             send_creationSuggest(res)
             return
@@ -260,6 +264,79 @@ def handle_dialog(req: Req, res):
         send_quizSuggests(res)
     else:
         send_idleSuggests(res)
+
+
+def send_idleSuggests(res):
+    res['response']['buttons'] = [
+        {
+            "title": "Топ✨",
+            "hide": True
+        },
+        # {
+        #     "title": "Викторина ...",
+        #     "hide": True
+        # },
+        {
+            "title": "Случайная🎲",
+            "hide": True
+        },
+        {
+            "title": "Создать🤖",
+            "hide": True
+        },
+        {
+            "title": "Что ты умеешь?🤔",
+            "hide": True
+        },
+        {
+            "title": "Помощь😣",
+            "hide": True
+        }
+    ]
+
+
+def send_quizSuggests(res):
+    res['response']['buttons'] = [
+        {
+            "title": "Выход",
+            "hide": True
+        },
+        {
+            "title": "Повтори вопрос",
+            "hide": True
+        }
+    ]
+
+
+def send_creationSuggest(res):
+    res['response']['buttons'] = res['response'].get('buttons', []) + [
+        {
+            "title": "Создать",
+            "url": "https://youtube.com",
+            "hide": False
+        }
+    ]
+
+
+def send_greetings(res):
+    res['response']['text'] = "Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?"
+    res['response']['tts'] = "Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?"
+    res['response']['buttons'] = [
+        {
+            "title": "Да, давай",
+            "payload": {},
+            "hide": True
+        },
+        {
+            "title": "Нет",
+            "payload": {},
+            "hide": True
+        }
+    ]
+
+
+def send_error(res):
+    res['response']['text'] = "Извини, я не поняла, повтори пожалуйста"
 
 
 def passing_the_quiz(req, res):
@@ -320,81 +397,6 @@ def passing_the_quiz(req, res):
     return
 
 
-def send_idleSuggests(res):
-    res['response']['buttons'] = [
-        {
-            "title": "Топ✨",
-            "hide": True
-        },
-        # {
-        #     "title": "Викторина ...",
-        #     "hide": True
-        # },
-        {
-            "title": "Случайная🎲",
-            "hide": True
-        },
-        {
-            "title": "Создать🤖",
-            "hide": True
-        },
-        {
-            "title": "Что ты умеешь?🤔",
-            "hide": True
-        },
-        {
-            "title": "Помощь😣",
-            "hide": True
-        }
-    ]
-
-
-def send_quizSuggests(res):
-    res['response']['buttons'] = [
-        {
-            "title": "Выход",
-            "hide": True
-        },
-        {
-            "title": "Повтори вопрос",
-            "hide": True
-        }
-    ]
-
-
-def send_creationSuggest(res):
-    res['response']['buttons'] = res['response'].get('buttons', []) + [
-        {
-            "title": "Создать",
-            "url": "https://youtube.com",
-            "hide": False
-        }
-    ]
-
-
-def send_greetings(res):
-    res['response'][
-        'text'] = "Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?"
-    res['response'][
-        'tts'] = "Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?"
-    res['response']['buttons'] = [
-        {
-            "title": "Да, давай",
-            "payload": {},
-            "hide": True
-        },
-        {
-            "title": "Нет",
-            "payload": {},
-            "hide": True
-        }
-    ]
-
-
-def send_error(res):
-    res['response']['text'] = "Извини, я не поняла, повтори пожалуйста"
-
-
 def random_quiz(user_id):
     sessionStorage[user_id]['status'] = 'passing_the_quiz'
     sessionStorage[user_id]['current_quiz'] = random.randint(
@@ -408,7 +410,7 @@ def download_image_by_bits(image_bits):
     headers = {
         'Authorization': 'OAuth y0_AgAAAAAhKRZBAAT7owAAAADfkTMUOctm8BgkQU-3pQ8X_Vd5UK3G1qw'}
     files = {'file': image_bits}
-    req = requests.post(url=alice_url, headers=headers, files=files)
+    req = requests_lib.post(url=alice_url, headers=headers, files=files)
     return req.json()
 
 
@@ -416,7 +418,7 @@ def delete_image(image_id):
     alice_url = f'https://dialogs.yandex.net/api/v1/skills/a9331dba-12d5-41be-ba3b-d691a6294153/images/{image_id}'
     headers = {
         'Authorization': 'OAuth y0_AgAAAAAhKRZBAAT7owAAAADfkTMUOctm8BgkQU-3pQ8X_Vd5UK3G1qw'}
-    req = requests.delete(url=alice_url, headers=headers)
+    req = requests_lib.delete(url=alice_url, headers=headers)
     return req.json()
 
 
