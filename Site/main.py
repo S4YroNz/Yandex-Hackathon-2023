@@ -210,8 +210,8 @@ def delete_quiz(id):
 
 def main():
     db_session.global_init('db/ya_quiz.db')
-    api.add_resource(quizzes_resources.QuizResource, "/api/quiz")
-    api.add_resource(quizzes_resources.QuizListResource, "/api/quiz/<int:quiz_id>")
+    api.add_resource(quizzes_resources.QuizResource, "/api/quiz/<int:quiz_id>")
+    api.add_resource(quizzes_resources.QuizListResource, "/api/quiz")
     app.run(port=8080, host='127.0.0.1')
 
 # TODO: база данных аккаунтов вида

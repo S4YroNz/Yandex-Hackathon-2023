@@ -1,5 +1,6 @@
 from flask_restful import abort, Resource
 from flask import jsonify
+import json
 
 from . import db_session
 from .quizzes import Quiz
@@ -33,10 +34,13 @@ class QuizResource(Resource):
 
 class QuizListResource(Resource):
     def get(self):
-        session = db_session.create_session()
-        quiz = session.query(Quiz).all()
-        return jsonify({'quiz': [item.to_dict(
-            only=('title', ...)) for item in quiz]})  # оставляем нужные параметры
+        # TODO: поиск всех файлом квизов в соответствующей папке
+        files = ['quiz_1.json']
+        json_file = {'quiz': []}
+        for name in files:
+            with open(name) as file:
+                json_file['quiz'].append(json.load(file))
+        return jsonify(json_file)
 
     def post(self):
         args = parser_quiz.parse_args()

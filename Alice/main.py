@@ -1,8 +1,11 @@
+import random
 
 from flask import Flask, request, jsonify
 from typing import Dict
 from wordVariations import VARIATIONS
 import logging
+import requests
+import json
 
 
 app = Flask(__name__)
@@ -243,11 +246,35 @@ def send_error(res):
     res['response']['text'] = "Извини, я не поняла, повтори пожалуйста"
 
 
-def send_greetings(res):
-    res['response']['text'] = "Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?"
-    res['response']['tts'] = "Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?"
-    res['response']['buttons'] = [
-        {
+def random_quiz(user_id):
+    sessionStorage[user_id]['status'] = 'passing_the_quiz'
+    sessionStorage[user_id]['current_quiz'] = random.randint(0, len(sessionStorage['quizzes']))
+    sessionStorage[user_id]['current_question'] = 0
+    return
+
+
+def download_image_by_bits(image_bits):
+    alice_url = 'https://dialogs.yandex.net/api/v1/skills/a9331dba-12d5-41be-ba3b-d691a6294153/images'
+    headers = {'Authorization': 'OAuth y0_AgAAAAAhKRZBAAT7owAAAADfkTMUOctm8BgkQU-3pQ8X_Vd5UK3G1qw'}
+    files = {'file': image_bits}
+    req = requests.post(url=alice_url, headers=headers, files=files)
+    return req.json()
+
+
+def delete_image(image_id):
+    alice_url = f'https://dialogs.yandex.net/api/v1/skills/a9331dba-12d5-41be-ba3b-d691a6294153/images/{image_id}'
+    headers = {'Authorization': 'OAuth y0_AgAAAAAhKRZBAAT7owAAAADfkTMUOctm8BgkQU-3pQ8X_Vd5UK3G1qw'}
+    req = requests.delete(url=alice_url, headers=headers)
+    return req.json()
+
+
+def greeting():
+    result = {
+        'text': '''
+    Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?
+    ''',
+        'buttons': [
+            {
             "title": "Да, давай",
             "payload": {},
             "hide": True
