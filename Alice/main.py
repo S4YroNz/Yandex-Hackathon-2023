@@ -3,6 +3,7 @@ import random
 from flask import Flask, request, jsonify
 import logging
 import requests
+import json
 
 
 app = Flask(__name__)
@@ -34,7 +35,10 @@ def handle_dialog(req, res):
     user_id = req['session']['user_id']
     user_answer = req['request']['original_utterance'].lower()
     if req['session']['new']:
-        sessionStorage['quizzes'] = requests.get('http://адрес нашего сайта/api/quiz').json()['quiz']
+        # sessionStorage['quizzes'] = requests.get('http://адрес нашего сайта/api/quiz').json()['quiz']
+        with open('all_quizzes.json', 'r') as file:
+            sessionStorage['quizzes'] = json.load(file)
+
         sessionStorage[user_id]['status'] = 'start'
         greet = greeting()
         res['response']['text'] = greet['text']
@@ -42,10 +46,10 @@ def handle_dialog(req, res):
         return
     if sessionStorage[user_id]['status'] == 'start':
 
-        if user_answer == "да, давай":
+        if user_answer == "да, давай" or req['request']['nlu']['intents']['YANDEX.CONFIRM']:
             random_quiz(user_id)
             passing_the_quiz(req, res)
-        elif user_answer == 'нет':
+        elif user_answer == 'нет' or req['request']['nlu']['intents']['YANDEX.REJECT']:
             res['response']['text'] = 'Хорошо, тогда можешь посмотреть топ викторин'
             res['response']['card'] = show_top()['card']
         elif user_answer == 'что ты можешь?':
