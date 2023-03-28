@@ -1,5 +1,7 @@
 
 from flask import Flask, request, jsonify
+from typing import Dict
+from wordVariations import VARIATIONS
 import logging
 
 
@@ -8,188 +10,255 @@ app = Flask(__name__)
 
 logging.basicConfig(level=logging.INFO)
 
-sessionStorage = {}
+
+class User:
+    def __init__(self, id_):
+        self.id = id_
+        self.isNew = True
+        self.inQuiz = False
+        self.justFinished = True
+        self.requests = 0
+
+
+sessionStorage: Dict[str, User] = {}
+
+
+class _nlu:
+    def __init__(self, r: dict):
+        self.tokens: list[str] = r['tokens']
+        self.entities: list[dict] = r['entities']
+
+
+class _sessionUser:
+    def __init__(self, r: dict):
+        self.user_id: str = r['user_id']
+        self.access_token: str = r.get('access_token', None)
+
+    def todict(self):
+        return vars(self)
+
+
+class _reqSession:
+    def __init__(self, r: dict):
+        self.message_id: int = r['message_id']
+        self.session_id: str = r['session_id']
+        self.skill_id: str = r['skill_id']
+        self.user_id: str = r['user_id']
+        self.user = _sessionUser(r['user'])
+        self.application = r['application']
+        self.new: bool = r['new']
+
+    def todict(self):
+        a = {}
+        for key, value in vars(self).items():
+            if not isinstance(value, (str, int, bool, list, dict)):
+                a[key] = value.todict()
+            else:
+                a[key] = value
+        return a
+
+
+class _request:
+    def __init__(self, r: dict):
+        self.type: str = r['type']
+        self.nlu = _nlu(r['nlu'])
+        self.command: str = r.get('command', None)
+        self.original_utterance: str = r.get('original_utterance', None)
+        self.markup: dict = r.get('markup', None)
+        self.payload: dict = r.get('payload', None)
+
+    def todict(self):
+        a = {}
+        for key, value in vars(self).items():
+            if not isinstance(value, (str, int, bool, list, dict)):
+                a[key] = value.todict()
+            else:
+                a[key] = value
+        return a
+
+
+class Req:
+    def __init__(self, r: dict):
+        self.meta = r['meta']
+        self.request = _request(r['request'])
+        self.session = _reqSession(r['session'])
+        self.state: dict = r.get('state', None)
+        self.version: str = r['version']
 
 
 @app.route('/post', methods=['POST'])
 def main():
     logging.info(f'Request: {request.json!r}')
+    req = Req(request.json)
     response = {
-        'session': request.json['session'],
-        'version': request.json['version'],
+        'session': req.session.todict(),
+        'version': req.version,
         'response': {
             'end_session': False
         }
     }
-    handle_dialog(request.json, response)
+    handle_dialog(req, response)
 
     logging.info(f'Response:  {response!r}')
 
     return jsonify(response)
 
 
-def handle_dialog(req, res):
-    user_id = req['session']['user_id']
-    user_answer = req['request']['original_utterance'].lower()
-    if req['session']['new']:
-        sessionStorage[user_id]['status'] = 'start'
-        greet = greeting()
-        res['response']['text'] = greet['text']
-        res['response']['buttons'] = greet['buttons']
-        return
-    if sessionStorage[user_id]['status'] == 'start':
+def check_tokens(tokens, variation):
+    for token in tokens:
+        if token in VARIATIONS[variation]:
+            return True
+    return False
 
-        if user_answer == "да, давай":
-            random_quiz(user_id)
-            passing_the_quiz()
-        elif user_answer == 'нет':
+
+def handle_dialog(req: Req, res):
+    user_id = req.session.user_id
+    if req.session.new:
+        sessionStorage[user_id] = User(user_id)
+        send_greetings(res)
+        return
+    sessionStorage[user_id].requests += 1
+
+    tokens = req.request.nlu.tokens
+    print(sessionStorage[user_id].isNew, sessionStorage[user_id].inQuiz)
+
+    if sessionStorage[user_id].isNew:
+        if check_tokens(tokens, 'да'):
+            res['response']['text'] = 'Начинаю случайную викторину'
+            sessionStorage[user_id].inQuiz = True
+            send_quizSuggests(res)
+            return
+        elif check_tokens(tokens, 'нет'):
             res['response']['text'] = 'Хорошо, тогда можешь посмотреть топ викторин'
-            res['response']['card'] = show_top()['card']
-        elif user_answer == 'что ты можешь?':
-            res['response']['text'] = '''Я могу запустить случайную или выбранную тобой викторину, 
-            могу вывести топ самых проходимых. А если ты не нашел той викторины, которую хотел пройти,  
-            можешь сам ее создать'''
-            res['response']['buttons'] = get_idle_suggests()
-            sessionStorage[user_id]['status'] = 'idling'
-        elif user_answer == 'расскажи правила' or user_answer == 'помощь':
-            res['response']['text'] = '''Викторины состоят из нескольких вопросов, в ответ на каждый ты
-             можешь выбрать один вариант из нескольких предложенных. Ответив на каждый вопрос, ты узнаешь результат'''
-            res['response']['buttons'] = get_idle_suggests()
-            sessionStorage[user_id]['status'] = 'idling'
-        else:
-            res['response']['text'] = unrecognized_phrase()['text']
-        return
-    if sessionStorage[user_id]['status'] == 'passing_the_quiz':
-        if user_answer in ['выход', 'стоп']:
-            res['response']['text'] = 'Хорошо, выхожу из викторины'
-            sessionStorage[user_id]['status'] = 'idling'
-        else:
-            passing_the_quiz()
-        return
-    if sessionStorage[user_id]['status'] == 'idling':
-        if user_answer == 'выведи топ викторин':
-            show_top()
-        elif 'запусти викторину' in user_answer:
-            sessionStorage[user_id]['current_quiz'] = user_answer.split('запусти викторину')[-1].strip()
-            sessionStorage[user_id]['status'] = 'passing_the_quiz'
-            sessionStorage[user_id]['current_question'] = 0
-            passing_the_quiz()
-        elif user_answer == 'запусти случайную викторину':
-            random_quiz(user_id)
-        elif user_answer == 'я хочу создать викторину':
-            create_quiz()
-        elif user_answer == 'что ты можешь?':
-            res['response']['text'] = '''Я могу запустить случайную или выбранную тобой викторину, 
-            могу вывести топ самых проходимых. А если ты не нашел той викторины, которую хотел пройти,  
-            можешь сам ее создать'''
-            res['response']['buttons'] = get_idle_suggests()
-        elif user_answer == 'расскажи правила':
-            res['response']['text'] = '''Викторины состоят из нескольких вопросов, в ответ на каждый ты
-             можешь выбрать один вариант из нескольких предложенных. Ответив на каждый вопрос, ты узнаешь результат'''
-            res['response']['buttons'] = get_idle_suggests()
+            send_idleSuggests(res)
+            return
 
-def get_idle_suggests():
-    result = {
-         'buttons': [
+    if sessionStorage[user_id].inQuiz:
+        if check_tokens(tokens, 'выход'):
+            res['response']['text'] = 'Хорошо, выхожу из викторины'
+            sessionStorage[user_id].inQuiz = False
+            send_idleSuggests(res)
+            return
+        if check_tokens(tokens, 'повтори'):
+            res['response']['text'] = 'Повторяю вопрос'
+            send_quizSuggests(res)
+            return
+
+    if not sessionStorage[user_id].inQuiz:
+        if sessionStorage[user_id].justFinished:
+            if check_tokens(tokens, 'заново'):
+                res['response']['text'] = 'Запускаю эту же викторину заново'
+                sessionStorage[user_id].justFinished = False
+                sessionStorage[user_id].inQuiz = True
+                send_idleSuggests(res)
+                return
+        if check_tokens(tokens, 'топ викторин'):
+            res['response']['text'] = 'Вывела топ викторин'
+            send_idleSuggests(res)
+            return
+        if check_tokens(tokens, 'случайная викторина'):
+            res['response']['text'] = 'Начинаю случайную викторину'
+            sessionStorage[user_id].inQuiz = True
+            send_quizSuggests(res)
+            return
+        if check_tokens(tokens, 'создание викторины'):
+            res['response']['text'] = 'Чтобы создать викторину, перейдите по ссылке. Удачи сделать классную викторину!'
+            send_idleSuggests(res)
+            send_creationSuggest(res)
+            return
+        if check_tokens(tokens, 'умения'):
+            res['response']['text'] = "Я могу запустить случайную или выбранную тобой викторину, \
+могу вывести топ самых проходимых. А если ты не нашел той викторины, которую хотел пройти, \
+можешь сам ее создать"
+            send_idleSuggests(res)
+            return
+        if check_tokens(tokens, 'правила'):
+            res['response']['text'] = "Викторины состоят из нескольких вопросов, в ответ на каждый ты\
+можешь выбрать один вариант из нескольких предложенных. Ответив на каждый вопрос, ты узнаешь результат"
+            send_idleSuggests(res)
+            return
+
+    sessionStorage[user_id].justFinished = False
+    sessionStorage[user_id].isNew = False
+    send_error(res)
+    if sessionStorage[user_id].inQuiz:
+        send_quizSuggests(res)
+    else:
+        send_idleSuggests(res)
+
+
+def send_idleSuggests(res):
+    res['response']['buttons'] = [
         {
-            "title": "Выведи топ викторин",
-            "payload": {},
+            "title": "Топ✨",
             "hide": True
         },
-             {
-                 "title": "Запусти случайную викторину",
-                 "payload": {},
-                 "hide": True
-             },
-             {
-                 "title": "Я хочу создать викторину",
-                 "payload": {},
-                 "hide": True
-             },
-             {
-                 "title": "Что ты можешь?",
-                 "payload": {},
-                 "hide": True
-             },
-             {
-                 "title": "Расскажи правила",
-                 "payload": {},
-                 "hide": True
-             }
-
-
-         ]
-     }
-    return result
-def create_quiz():
-    return
-def unrecognized_phrase():
-    result = {
-        'text': 'Извини, я тебя не поняла, повтори пожалуйста'
-    }
-    return result
-
-
-def show_top():
-    result = {
-        'card': {
-            'type' : 'ItemList',
-            "header": {
-                "text": "Заголовок списка изображений",
-            },
-            'items': []
+        # {
+        #     "title": "Викторина ...",
+        #     "hide": True
+        # },
+        {
+            "title": "Случайная🎲",
+            "hide": True
         },
-        'buttons': [
-            {
-                "title": "Викторина 1",
-                "payload": {},
-                "hide": True
-            },
-            {
-                "title": "Викторина 2",
-                "payload": {},
-                "hide": True
-            }
-        ]
+        {
+            "title": "Создать🤖",
+            "hide": True
+        },
+        {
+            "title": "Что ты умеешь?🤔",
+            "hide": True
+        },
+        {
+            "title": "Помощь😣",
+            "hide": True
+        }
+    ]
 
 
-    }
-    return result
+def send_quizSuggests(res):
+    res['response']['buttons'] = [
+        {
+            "title": "Выход",
+            "hide": True
+        },
+        {
+            "title": "Повтори вопрос",
+            "hide": True
+        }
+    ]
 
 
-def passing_the_quiz():
-    # TODO: Прохождение квиза
-    return
+def send_creationSuggest(res):
+    res['response']['buttons'] = res['response'].get('buttons', []) + [
+        {
+            "title": "Создать",
+            "url": "https://youtube.com",
+            "hide": False
+        }
+    ]
 
 
-def random_quiz(user_id):
-    sessionStorage[user_id]['status'] = 'passing_the_quiz'
-    # TODO: Выбор рандомного квиза
-    sessionStorage[user_id]['current_quiz'] = 'quiz_name'
-    sessionStorage[user_id]['current_question'] = 0
-    return
+def send_error(res):
+    res['response']['text'] = "Извини, я не поняла, повтори пожалуйста"
 
 
-def greeting():
-    result = {
-        'text': '''
-    Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?
-    ''',
-        'buttons': [
-            {
+def send_greetings(res):
+    res['response']['text'] = "Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?"
+    res['response']['tts'] = "Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?"
+    res['response']['buttons'] = [
+        {
             "title": "Да, давай",
             "payload": {},
             "hide": True
-            },
-            {
-                "title": "Нет",
-                "payload": {},
-                "hide": True
-            }
-        ]
+        },
+        {
+            "title": "Нет",
+            "payload": {},
+            "hide": True
+        }
+    ]
 
-    }
-    return result
 
 if __name__ == '__main__':
     app.run()
