@@ -6,9 +6,7 @@ import logging
 import requests
 import json
 
-
 app = Flask(__name__)
-
 
 logging.basicConfig(level=logging.INFO)
 
@@ -21,9 +19,13 @@ class User:
         self.justFinished = False
         self.quizId = None
         self.questionId = None
+        self.quizResult = {}
 
 
 sessionStorage: Dict[str, User] = {}
+
+with open('all_quizzes.json', encoding='utf-8') as file:
+    quizzes = json.load(file)['quizzes']
 
 
 class _nlu:
@@ -119,7 +121,6 @@ def handle_dialog(req: Req, res):
     user_id = req.session.user_id
     user_answer = req['request']['nlu']['intents']
     if req.session.new:
-        sessionStorage['quizzes'] = requests.get('http://адрес нашего сайта/api/quiz').json()['quiz']
         sessionStorage[user_id] = User(user_id)
         send_greetings(res)
         return
@@ -132,6 +133,7 @@ def handle_dialog(req: Req, res):
         if 'YANDEX.CONFIRM' in user_answer:
             res['response']['text'] = 'Начинаю случайную викторину'
             sessionStorage[user_id].inQuiz = True
+            sessionStorage[user_id].quizId = random.randint(0, len(sessionStorage))
             send_quizSuggests(res)
             return
         elif 'YANDEX.REJECT' in user_answer:
@@ -140,6 +142,28 @@ def handle_dialog(req: Req, res):
             return
 
     if sessionStorage[user_id].inQuiz:
+        quiz = quizzes[sessionStorage[user_id].quizId]
+        if not sessionStorage[user_id].questionId:
+            res['response']['text'] = f"""{quiz['title']}\n
+                            \n{quiz['description']}\n
+                             от {quiz['creator']}"""
+            res['response']['card'] = {}
+            res['response']['card']['type'] = 'BigImage'
+            res['response']['card']['title'] = 'Превью теста'
+            res['response']['card']['image_id'] = quiz['image']
+
+            if quiz['type'] == 'percent':
+                sessionStorage[user_id].quizResult['true'] = 0
+            else:
+                for pers in quiz['characters']:
+                    sessionStorage[user_id].quizResult[pers['title']] = 0
+            res['response']['buttons'] = [
+                {
+                    "title": "Начать!",
+                    "hide": True
+                }
+            ]
+            return
         if 'STOP' in user_answer:
             res['response']['text'] = 'Хорошо, выхожу из викторины'
             sessionStorage[user_id].inQuiz = False
@@ -148,6 +172,50 @@ def handle_dialog(req: Req, res):
         if 'YANDEX.REPEAT' in user_answer:
             res['response']['text'] = 'Повторяю вопрос'
             send_quizSuggests(res)
+            return
+        if 'YANDEX.CONFIRM' in user_answer:  # sessionStorage[user_id].questionId == 1:
+            question = quiz['questions'][sessionStorage[user_id].questionId - 1]
+            answers = '\n'.join(
+                [f"{i + 1}. {value['title']}" for i, value in enumerate(question['answers'])])
+            res['response']['text'] = f"""{question['title']}\n\n{answers}"""
+            sessionStorage[user_id].questionId += 1
+            # подсказки
+            return
+        if 'CHOOSE_ANSWER_1' in user_answer or 'CHOOSE_ANSWER_2' in user_answer:
+            answer = user_answer['CHOOSE_ANSWER_1']['slots']['answer_number']['value']
+            if quiz['type'] == 'percent':
+                if quiz['questions'][sessionStorage[user_id].questionId - 2]['answers'][answer - 1]['is_true']:
+                    sessionStorage[user_id].quizResult['true'] += 1
+            else:
+                for pers in quiz['questions'][sessionStorage[user_id].questionId - 2]['answers'][answer - 1]['characters']:
+                    sessionStorage[user_id].quizResult[pers] += 1
+            if 1 <= sessionStorage[user_id].questionId <= len(quiz['questions']):
+                question = quiz['questions'][sessionStorage[user_id].questionId - 1]
+                answers = '\n'.join(
+                    [f"{i + 1}. {value['title']}" for i, value in enumerate(question['answers'])])
+                res['response']['text'] = f"""{question['title']}\n\n{answers}"""
+                sessionStorage[user_id].questionId += 1
+                # подсказки
+                return
+            if sessionStorage[user_id].questionId == len(quiz['questions']) + 1:
+                if quiz['type'] == 'person':
+                    result = max(sessionStorage[user_id].quizResult.values())
+                    for key, value in sessionStorage[user_id].quizResult.items():
+                        if value == result:
+                            result = key
+                            break
+                    result = list(
+                        filter(lambda x: x['title'] == result, quiz['characters']))[0]
+                    res['response']['text'] = f"""Поздравляем! Вы - {result['title']}!\n{result['description']}"""
+                    res['response']['card'] = {}
+                    res['response']['card']['type'] = 'BigImage'
+                    res['response']['card']['title'] = result['title']
+                    res['response']['card']['image_id'] = result['photo']
+                else:
+                    res['response'][
+                        'text'] = f"""Поздравляем! Вы ответили правильно
+                         на {int(100 * sessionStorage[user_id].quizResult['true'] / len(quiz['questions']))}%"""
+                sessionStorage[user_id].justFinished = True
             return
 
     if not sessionStorage[user_id].inQuiz:
@@ -165,6 +233,7 @@ def handle_dialog(req: Req, res):
         if 'START_RANDOM_QUIZ' in user_answer:
             res['response']['text'] = 'Начинаю случайную викторину'
             sessionStorage[user_id].inQuiz = True
+            sessionStorage[user_id].quizId = random.randint(0, len(sessionStorage))
             send_quizSuggests(res)
             return
         if 'CREATE_QUIZ' in user_answer:
@@ -191,79 +260,6 @@ def handle_dialog(req: Req, res):
         send_quizSuggests(res)
     else:
         send_idleSuggests(res)
-
-
-def send_idleSuggests(res):
-    res['response']['buttons'] = [
-        {
-            "title": "Топ✨",
-            "hide": True
-        },
-        # {
-        #     "title": "Викторина ...",
-        #     "hide": True
-        # },
-        {
-            "title": "Случайная🎲",
-            "hide": True
-        },
-        {
-            "title": "Создать🤖",
-            "hide": True
-        },
-        {
-            "title": "Что ты умеешь?🤔",
-            "hide": True
-        },
-        {
-            "title": "Помощь😣",
-            "hide": True
-        }
-    ]
-
-
-def send_quizSuggests(res):
-    res['response']['buttons'] = [
-        {
-            "title": "Выход",
-            "hide": True
-        },
-        {
-            "title": "Повтори вопрос",
-            "hide": True
-        }
-    ]
-
-
-def send_creationSuggest(res):
-    res['response']['buttons'] = res['response'].get('buttons', []) + [
-        {
-            "title": "Создать",
-            "url": "https://youtube.com",
-            "hide": False
-        }
-    ]
-
-
-def send_greetings(res):
-    res['response']['text'] = "Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?"
-    res['response']['tts'] = "Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?"
-    res['response']['buttons'] = [
-        {
-            "title": "Да, давай",
-            "payload": {},
-            "hide": True
-        },
-        {
-            "title": "Нет",
-            "payload": {},
-            "hide": True
-        }
-    ]
-
-
-def send_error(res):
-    res['response']['text'] = "Извини, я не поняла, повтори пожалуйста"
 
 
 def passing_the_quiz(req, res):
@@ -322,6 +318,81 @@ def passing_the_quiz(req, res):
     session['current_question'] += 1
     sessionStorage[user_id] = session
     return
+
+
+def send_idleSuggests(res):
+    res['response']['buttons'] = [
+        {
+            "title": "Топ✨",
+            "hide": True
+        },
+        # {
+        #     "title": "Викторина ...",
+        #     "hide": True
+        # },
+        {
+            "title": "Случайная🎲",
+            "hide": True
+        },
+        {
+            "title": "Создать🤖",
+            "hide": True
+        },
+        {
+            "title": "Что ты умеешь?🤔",
+            "hide": True
+        },
+        {
+            "title": "Помощь😣",
+            "hide": True
+        }
+    ]
+
+
+def send_quizSuggests(res):
+    res['response']['buttons'] = [
+        {
+            "title": "Выход",
+            "hide": True
+        },
+        {
+            "title": "Повтори вопрос",
+            "hide": True
+        }
+    ]
+
+
+def send_creationSuggest(res):
+    res['response']['buttons'] = res['response'].get('buttons', []) + [
+        {
+            "title": "Создать",
+            "url": "https://youtube.com",
+            "hide": False
+        }
+    ]
+
+
+def send_greetings(res):
+    res['response'][
+        'text'] = "Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?"
+    res['response'][
+        'tts'] = "Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?"
+    res['response']['buttons'] = [
+        {
+            "title": "Да, давай",
+            "payload": {},
+            "hide": True
+        },
+        {
+            "title": "Нет",
+            "payload": {},
+            "hide": True
+        }
+    ]
+
+
+def send_error(res):
+    res['response']['text'] = "Извини, я не поняла, повтори пожалуйста"
 
 
 def random_quiz(user_id):
