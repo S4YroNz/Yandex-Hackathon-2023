@@ -87,6 +87,7 @@ class Req:
         self.session = _reqSession(r['session'])
         self.state: dict = r.get('state', None)
         self.version: str = r['version']
+        self.result = {}
 
 
 @app.route('/post', methods=['POST'])
@@ -118,6 +119,7 @@ def handle_dialog(req: Req, res):
     user_id = req.session.user_id
     user_answer = req['request']['nlu']['intents']
     if req.session.new:
+        sessionStorage['quizzes'] = requests.get('http://адрес нашего сайта/api/quiz').json()['quiz']
         sessionStorage[user_id] = User(user_id)
         send_greetings(res)
         return
