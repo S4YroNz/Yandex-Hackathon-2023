@@ -1,5 +1,4 @@
 import random
-import requests as requests_lib
 import json
 
 
@@ -58,6 +57,8 @@ class _reqSession:
             else:
                 a[key] = value
         return a
+
+
 class _request:
     def __init__(self, r: dict):
         self.type: str = r['type']
@@ -103,7 +104,15 @@ def main(event, context):
     handle_dialog(req, res, user)
     res['session_state'] = user.toDict()
 
+    cutTooLongText(res)
     return res
+
+
+def cutTooLongText(res):
+    a = res['response']['text']
+    if len(a) > 1024:
+        res['response']['text'] = a[:1022] + '..'
+        return
 
 
 def handle_dialog(req: Req, res, user: User):
@@ -184,7 +193,7 @@ def handle_dialog(req: Req, res, user: User):
         if 'WHAT_YOU_CAN_DO' in intents:
             res['response']['text'] = "Я могу запустить случайную или выбранную тобой викторину, \
 могу вывести топ самых проходимых. А если ты не нашел той викторины, которую хотел пройти, \
-можешь сам ее создать"
+можешь сам ее создать."
             send_idleSuggests(res)
             return
         if 'YANDEX.HELP' in intents:
@@ -300,12 +309,13 @@ def preview_quiz(user: User, res, quiz_id):
     creator = quizzes[user.quizId]['creator']
     preview = quizzes[user.quizId]['image']
     res['response']['text'] = f"{title}\n{description}\nСоздатель:{creator}\nНачинаем?"
-    res['response']['card'] = {}
-    card = res['response']['card']
-    card['type'] = 'BigImage'
-    card['image_id'] = preview
-    card['title'] = f'{title} Начинаем?'
-    card['description'] = f'{description}\nСоздатель: {creator}'
+    if quizzes[user.quizId].get('image', None):
+        res['response']['card'] = {}
+        card = res['response']['card']
+        card['type'] = 'BigImage'
+        card['image_id'] = preview
+        card['title'] = f'{title}'
+        card['description'] = f'{description}\nСоздатель: {creator}\nНачинаем?'
     send_yesnoSuggest(res)
 
 
@@ -315,7 +325,8 @@ def start_quiz(user: User):
     quiz = quizzes[user.quizId]
     if quiz['type'] == 'person':
 
-        user.result = {character['name']: 0 for character in quiz['characters']}
+        user.result = {character['name']
+            : 0 for character in quiz['characters']}
     elif quiz['type'] == 'percent':
         user.result = 0
 
@@ -406,20 +417,3 @@ def send_yesnoSuggest(res):
 
 def send_error(res):
     res['response']['text'] = "Извини, я не поняла, повтори пожалуйста"
-
-
-def download_image_by_bits(image_bits):
-    alice_url = 'https://dialogs.yandex.net/api/v1/skills/a9331dba-12d5-41be-ba3b-d691a6294153/images'
-    headers = {
-        'Authorization': 'OAuth y0_AgAAAAAhKRZBAAT7owAAAADfkTMUOctm8BgkQU-3pQ8X_Vd5UK3G1qw'}
-    files = {'file': image_bits}
-    req = requests_lib.post(url=alice_url, headers=headers, files=files)
-    return req.json()
-
-
-def delete_image(image_id):
-    alice_url = f'https://dialogs.yandex.net/api/v1/skills/a9331dba-12d5-41be-ba3b-d691a6294153/images/{image_id}'
-    headers = {
-        'Authorization': 'OAuth y0_AgAAAAAhKRZBAAT7owAAAADfkTMUOctm8BgkQU-3pQ8X_Vd5UK3G1qw'}
-    req = requests_lib.delete(url=alice_url, headers=headers)
-    return req.json()

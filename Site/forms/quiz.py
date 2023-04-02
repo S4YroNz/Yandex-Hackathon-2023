@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, BooleanField, SubmitField
 from wtforms import SelectMultipleField, FieldList, Field, FormField, Form, FileField
-from wtforms.fields.html5 import EmailField, TelField, SearchField, URLField
+from wtforms.fields import EmailField, TelField, SearchField, URLField
 from wtforms.validators import DataRequired
 
 

@@ -3,6 +3,7 @@
 * {
     margin: 0;
     padding: 0;
+    position: relative;
     box-sizing: border-box;
     font-family: var(--main-text);
 }
@@ -35,11 +36,14 @@ body {
     --border-radius: 10px;
     --border-radius-smaller: 6px;
     --clr-grey: #cccccc;
-    --clr-main: #b12bff;
-    --clr-main-darker: #7c1cb4;
-    --clr-yandex: #fc3d17;
+    /* --clr-main: #b12bff; */
+    --clr-main: #439DFF;
+    /* --clr-main-darker: #7c1cb4; */
+    --clr-main-darker: #2874c5;
+    --clr-red: #fc3d17;
+    --clr: #c48989;
     --main-text: 'Montserrat', sans-serif;
-    --yandex-text: 'Oswald', sans-serif;
+    --strict-text: 'Oswald', sans-serif;
 }
 
 body {
@@ -72,12 +76,12 @@ header {
 }
 
 header .skill_name {
-    font-family: var(--yandex-text);
+    font-family: var(--strict-text);
 }
 
 header .skill_name span {
-    font-family: var(--yandex-text);
-    background: var(--clr-yandex);
+    font-family: var(--strict-text);
+    background: var(--clr-main);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -85,7 +89,7 @@ header .skill_name span {
 
 header .user_wrapper {
     line-height: 1em;
-    font-family: var(--yandex-text);
+    font-family: var(--strict-text);
     font-weight: 300;
     font-size: 1.4rem;
     text-align: right;
@@ -178,12 +182,6 @@ header .user_wrapper a:hover {
     transition: .1s ease;
 }
 
-.addPanel:hover {
-    background-color: var(--clr-main);
-    box-shadow: 0 0 4px 0 var(--clr-main);
-    color: white;
-}
-
 .panel-group .panel {
     border-top: none;
 }
@@ -207,7 +205,7 @@ header .user_wrapper a:hover {
     display: flex;
     position: relative;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
     padding: 15px 20px;
     font-family: var(--main-text);
 }
@@ -295,7 +293,7 @@ input[type="file"] {
     width: 100%;
     display: flex;
     justify-content: center;
-    color: var(--clr-yandex);
+    color: var(--clr-red);
 }
 
 .image_preview {
@@ -313,7 +311,7 @@ input[type="file"] {
     position: absolute;
     height: 80%;
     width: 80%;
-    fill: var(--clr-yandex);
+    fill: var(--clr-red);
     opacity: 0%;
     transition: opacity .2s;
 
@@ -360,10 +358,13 @@ input[type="text"]#title {
 textarea {
     width: 100%;
     border: 1px solid var(--clr-grey);
+    border-radius: var(--border-radius-smaller);
     resize: vertical;
-    font-size: 1.2rem;
+    min-height: 1.7rem;
+    font-size: 1rem;
     font-weight: 400;
     padding: 2px 4px;
+    margin: 4px 0;
 }
 
 
@@ -377,12 +378,12 @@ textarea {
 .input_list {
     position: relative;
     display: flex;
-    gap: 5px;
     flex-direction: column;
 }
 
 .input_list-element {
     margin: 2px 0;
+    height: 2rem;
     display: flex;
     align-items: center;
     pointer-events: visible;
@@ -390,20 +391,18 @@ textarea {
 
 .input_list-element::before {
     content: "";
-    background-color: var(--clr-grey);
-    min-width: 10px;
-    min-height: 10px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    margin: auto 5px;
-    pointer-events: all;
-
+    margin: 0 5px;
+    background-color: var(--clr-grey);
     transition: .1s ease;
 }
 
 .input_list-element:hover::before {
     border-radius: 0;
-    min-height: 3px;
-    background-color: var(--clr-yandex);
+    height: 3px;
+    background-color: var(--clr-red);
 }
 
 .input_list-element .input_list-element-text {
@@ -483,7 +482,7 @@ textarea {
 
 
 /* ~~~~~~~~~~~ Персонажи ~~~~~~~~~~ */
-.person_type_selected .panel-content span {
+.person_type_selected .panel-content>span {
     font-size: 1.2rem;
     font-style: italic;
 }
@@ -504,8 +503,14 @@ textarea {
     overflow: visible !important;
 }
 
+.person_container {
+    display: flex;
+    gap: 5px;
+    flex-direction: column;
+}
+
 /* ~~~~~~~~~~~ Кнопка отправления, создания формы ~~~~~~~~~~ */
-:is(input[type="submit"], .create_quiz) {
+:is(button[type="submit"], .create_quiz) {
     font-family: var(--main-text);
     font-weight: 500;
     font-size: 1.2rem;
@@ -524,7 +529,7 @@ textarea {
     transition: .2s ease;
 }
 
-:is(input[type="submit"], .create_quiz):hover {
+:is(button[type="submit"], .create_quiz):hover {
     border: 1px solid var(--clr-main);
     color: var(--clr-main);
     box-shadow: 0 0 0 0 var(--clr-main);
@@ -548,13 +553,13 @@ textarea {
         border-radius: 0 !important;
     }
     
-    .addPanel, input[type="submit"] {
+    .addPanel, button[type="submit"] {
         width: 90%;
     }
 
     .input_list-element::before {
         border-radius: 0;
         min-height: 3px;
-        background-color: var(--clr-yandex);
+        background-color: var(--clr-red);
     }
 }

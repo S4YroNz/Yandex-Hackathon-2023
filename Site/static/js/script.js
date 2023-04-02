@@ -16,39 +16,47 @@ const rowTypes = {
     <input class="percent_select" type="radio" name="question{i}_radio" value="{j}">
     <select class="person_select" name="question{i}_answer{j}_select" id=""></select>
     </li>`,
-    person: `<li class="input_list-element">
-    <input class="input_list-element-text" type="text" name="person{j}" data-name="person{!j!}" data-placeholder="Персонаж {!j!}" placeholder="Персонаж {j}">
+    person: `<div class="person_container">
+    <li class="input_list-element">
+        <input class="input_list-element-text" type="text" name="person{j}"
+            data-name="person{!j!}" data-placeholder="Персонаж {!j!}"
+            placeholder="Персонаж {j}">
+    </li>
     <div class="input-file-group">
-                        <label for="file{j}" class="input-file">
-                            <input type="file" id="file{j}" name="person{j}_image" accept=".png, .jpg, .jpeg">
-                            <span>
-                                <b id="choose">Выберите</b> <span class="dragAndDropEnabled">или перетащите</span> файл
-                                | Максимум 2мб.
-                            </span>
-                        </label>
-                        <div class="image_upload-error hide">Файл весит больше 2мб</div>
-                        <div class="preview_container hide">
-                            <img class="image_preview">
-                            <svg class="delete_image" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"
-                                width="50px" height="60px">
-                                <path
-                                    d="M182.746,422.305c-7.905,0-14.313-6.409-14.313-14.313v-91.604c0-7.904,6.408-14.313,14.313-14.313 c7.905,0,14.313,6.409,14.313,14.313v91.604C197.06,415.895,190.652,422.305,182.746,422.305z">
-                                </path>
-                                <path
-                                    d="M251.808,422.305c-7.905,0-14.313-6.409-14.313-14.313v-91.604c0-7.904,6.408-14.313,14.313-14.313 c7.905,0,14.313,6.409,14.313,14.313v91.604C266.121,415.895,259.713,422.305,251.808,422.305z">
-                                </path>
-                                <path
-                                    d="M320.869,422.305c-7.905,0-14.313-6.409-14.313-14.313v-91.604c0-7.904,6.408-14.313,14.313-14.313 c7.905,0,14.313,6.409,14.313,14.313v91.604C335.182,415.895,328.774,422.305,320.869,422.305z">
-                                </path>
-                                <path
-                                    d="M434.571,135.961c-8.435-13.251-21.524-22.423-36.856-25.828 c-7.712-1.722-15.362,3.152-17.076,10.869c-1.713,7.718,3.153,15.361,10.869,17.076c7.869,1.749,14.585,6.455,18.913,13.255 c4.328,6.8,5.75,14.879,4.002,22.748l-7.423,33.418L99.603,139.224l7.423-33.42c3.608-16.243,19.754-26.519,36.002-22.917 l145.2,32.249c7.713,1.713,15.361-3.153,17.076-10.869c1.713-7.718-3.153-15.361-10.869-17.076l-82.44-18.309l8.327-37.493 l122.96,27.308l-11.431,51.467c-1.713,7.718,3.153,15.361,10.869,17.076c1.045,0.232,2.088,0.344,3.116,0.344 c6.563,0,12.478-4.542,13.96-11.213l14.534-65.44c0.823-3.706,0.14-7.587-1.898-10.789c-2.038-3.202-5.266-5.463-8.972-6.286 L212.555,0.342c-7.713-1.709-15.362,3.152-17.076,10.869l-11.43,51.466l-34.815-7.732C117.579,47.909,86.11,67.948,79.079,99.6 l-10.526,47.391c-1.713,7.718,3.153,15.361,10.869,17.076l190.666,42.347H114.402c-7.905,0-14.313,6.409-14.313,14.313v276.96 c0,7.904,6.408,14.313,14.313,14.313h274.81c7.905,0,14.313-6.409,14.313-14.313V236.049l11.243,2.498 c1.026,0.229,2.067,0.341,3.103,0.341c2.701,0,5.37-0.764,7.686-2.239c3.202-2.038,5.463-5.266,6.288-8.972l10.526-47.391 C445.776,164.954,443.006,149.212,434.571,135.961z M374.9,483.374H128.716V235.04H374.9V483.374z">
-                                </path>
-                                </g>
-                            </svg>
-                        </div>
-                    </div>
-    </li>`
+        <div class="preview_container hide">
+            <img class="image_preview">
+            <svg class="delete_image" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"
+                width="50px" height="60px">
+                <path
+                    d="M182.746,422.305c-7.905,0-14.313-6.409-14.313-14.313v-91.604c0-7.904,6.408-14.313,14.313-14.313 c7.905,0,14.313,6.409,14.313,14.313v91.604C197.06,415.895,190.652,422.305,182.746,422.305z">
+                </path>
+                <path
+                    d="M251.808,422.305c-7.905,0-14.313-6.409-14.313-14.313v-91.604c0-7.904,6.408-14.313,14.313-14.313 c7.905,0,14.313,6.409,14.313,14.313v91.604C266.121,415.895,259.713,422.305,251.808,422.305z">
+                </path>
+                <path
+                    d="M320.869,422.305c-7.905,0-14.313-6.409-14.313-14.313v-91.604c0-7.904,6.408-14.313,14.313-14.313 c7.905,0,14.313,6.409,14.313,14.313v91.604C335.182,415.895,328.774,422.305,320.869,422.305z">
+                </path>
+                <path
+                    d="M434.571,135.961c-8.435-13.251-21.524-22.423-36.856-25.828 c-7.712-1.722-15.362,3.152-17.076,10.869c-1.713,7.718,3.153,15.361,10.869,17.076c7.869,1.749,14.585,6.455,18.913,13.255 c4.328,6.8,5.75,14.879,4.002,22.748l-7.423,33.418L99.603,139.224l7.423-33.42c3.608-16.243,19.754-26.519,36.002-22.917 l145.2,32.249c7.713,1.713,15.361-3.153,17.076-10.869c1.713-7.718-3.153-15.361-10.869-17.076l-82.44-18.309l8.327-37.493 l122.96,27.308l-11.431,51.467c-1.713,7.718,3.153,15.361,10.869,17.076c1.045,0.232,2.088,0.344,3.116,0.344 c6.563,0,12.478-4.542,13.96-11.213l14.534-65.44c0.823-3.706,0.14-7.587-1.898-10.789c-2.038-3.202-5.266-5.463-8.972-6.286 L212.555,0.342c-7.713-1.709-15.362,3.152-17.076,10.869l-11.43,51.466l-34.815-7.732C117.579,47.909,86.11,67.948,79.079,99.6 l-10.526,47.391c-1.713,7.718,3.153,15.361,10.869,17.076l190.666,42.347H114.402c-7.905,0-14.313,6.409-14.313,14.313v276.96 c0,7.904,6.408,14.313,14.313,14.313h274.81c7.905,0,14.313-6.409,14.313-14.313V236.049l11.243,2.498 c1.026,0.229,2.067,0.341,3.103,0.341c2.701,0,5.37-0.764,7.686-2.239c3.202-2.038,5.463-5.266,6.288-8.972l10.526-47.391 C445.776,164.954,443.006,149.212,434.571,135.961z M374.9,483.374H128.716V235.04H374.9V483.374z">
+                </path>
+                </g>
+            </svg>
+        </div>
+        <label for="personId{j}" class="input-file">
+            <input class="person_image" type="file" id="personId{j}" name="person{j}_image"
+                data-name="person{!j!}_image" accept=".png, .jpg, .jpeg">
+            <span>
+                <b id="choose">Выберите</b> <span class="dragAndDropEnabled">или
+                    <b>перетащите</b></span> файл
+            </span>
+        </label>
+        <div class="image_upload-error hide">Файл не является изображением</div>                                
+    </div>
+    <textarea name="person{j}_description" data-name="person{!j!}_description" placeholder="Опиасание персонажа {j}" data-placeholder="Описание персонажа {!j!}" rows="3"></textarea>
+</div>`
 }
+const elemError = `
+`
 
 const form = document.querySelector('form')
 const createPanelButton = document.querySelector(".addPanel")
@@ -181,19 +189,42 @@ function fillSelect(select) {
 // Удаление элемента списка
 function deleteRow(row) {
     var list = row.parentNode
+    console.log(list)
+    console.log(row)
     list.removeChild(row)
-    var rows = list.querySelectorAll('.input_list-element')
-
-    if (rows.length == 0) {
-        deletePanel(list.parentNode.parentNode)
-        return
+    var panel = list.parentNode.parentNode
+    var isPersonType = panel.classList.contains('person_type_selected')
+    if (isPersonType){
+        var rows = list.querySelectorAll('.person_container')
+    } else {
+        var rows = list.querySelectorAll('.input_list-element')
     }
 
+    if (rows.length == 0) {
+        deletePanel(panel)
+        return
+    }
+    
     for (let index = 0; index < rows.length; index++) {
         var element = rows[index]
         var input = element.querySelector('.input_list-element-text')
         input.placeholder = input.getAttribute('data-placeholder').replaceAll('{!j!}', index + 1)
-        input.name = input.getAttribute('data-name').replaceAll('{!i!}', list.parentNode.parentNode.id).replaceAll('{!j!}', index + 1)
+        input.name = input.getAttribute('data-name').replaceAll('{!i!}', panel.id).replaceAll('{!j!}', index + 1)
+        console.log(panel);
+        if (isPersonType){
+            console.log(fileInput);
+            var fileInput = element.querySelector('.person_image')
+            var textarea = element.querySelector('textarea')
+            fileInput.name = fileInput.getAttribute('data-name').replaceAll('{!j!}', index + 1)
+            textarea.name = textarea.getAttribute('data-name').replaceAll('{!j!}', index + 1)
+            textarea.placeholder = textarea.getAttribute('data-placeholder').replaceAll('{!j!}', index + 1)
+            var label = element.querySelector('.input-file')
+            label.setAttribute('for', `personId${index + 1}`)
+            fileInput.id = `personId${index + 1}`
+        } else {
+            var select = element.querySelector('.person_select')
+            select.name = select.getAttribute('data-name').replaceAll('{!j!}', index + 1)
+        }
     }
 }
 
@@ -215,7 +246,9 @@ function deletePanel(panel) {
         var elements = panel.querySelectorAll('.input_list-element-text')
         for (let eindex = 0; eindex < elements.length; eindex++) {
             var input = elements[eindex]
-            input.name = `question${num}_answer${eindex + 1}`
+            input.name = select.getAttribute('data-name').replaceAll('{!i!}', qindex + 1).replaceAll('{!j!}', eindex + 1)
+            var select = parent.querySelector('.person_select')
+            select.name = select.getAttribute('data-name').replaceAll('{!j!}', eindex + 1)
         }
     }
 }
@@ -311,24 +344,17 @@ function preventDefaults(e) {
 }
 
 function handleDrop(e, img_group) {
+    var input = img_group.querySelector('input')
     let dt = e.dataTransfer
-    let file = dt.files[0]
-    var img_preview = img_group.querySelector('.image_preview')
-    if (!acceptableSize(file)) {
-        showError(img_group)
-        deleteImage(img_group)
-        return
-    }
-    var preview_container = img_group.querySelector('.preview_container')
-    preview_container.classList.remove('hide')
-    previewDroppedFile(file, img_preview)
+    input.files = dt.files
+    handleFile(img_group)
 }
 
-function handleChoose(e, img_group) {
+function handleFile(img_group) {
     var input = img_group.querySelector('input')
     let file = input.files[0]
     var img_preview = img_group.querySelector('.image_preview')
-    if (!acceptableSize(file)) {
+    if (!validateType(file)) {
         showError(img_group)
         deleteImage(img_group)
         return
@@ -348,8 +374,12 @@ function deleteImage(img_group) {
     img.src = ""
 }
 
-function acceptableSize(file) {
-    return file.size <= 2097152
+function validateType(file) {
+    return [
+        'jpg',
+        'jpeg',
+        'png',
+    ].includes(file.name.split('.').pop())
 }
 
 function showError(img_group) {
@@ -388,7 +418,7 @@ function initImgGroup(img_group) {
             input_file.classList.remove('hover')
         })
         input_file.addEventListener('drop', function (e) { handleDrop(e, img_group) })
-        input_file.addEventListener('change', function (e) { handleChoose(e, img_group) })
+        input_file.addEventListener('change', function () { handleFile(img_group) })
 
         var delete_image = img_group.querySelector('.delete_image')
         delete_image.addEventListener('click', () => { deleteImage(img_group) })
