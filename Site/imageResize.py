@@ -1,10 +1,7 @@
 from PIL import Image, ImageFilter
-from io import BytesIO
-from pathlib import Path
 
-def resize(image: BytesIO, size: tuple[int, int]=(1000, 700), blur_radius=6):
+def resize(img: Image, size: tuple[int, int]=(776, 344), blur_radius=6):
     """Return `PIL.Image` of given :attr:`size` (default 1000x700) with bluring background"""
-    img = Image.open(image)
     imgW, imgH = img.size
     targetW, targetH = size
 
@@ -32,3 +29,4 @@ def resize(image: BytesIO, size: tuple[int, int]=(1000, 700), blur_radius=6):
 #         with open(img, 'rb') as bts:
 #             image = resize(bts, (776, 344))
 #             image.save(site / f'images/{i.name}/{img.name}')
+

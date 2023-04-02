@@ -1,16 +1,17 @@
 import random
+import requests
 import json
 
 
 class User:
     def __init__(self, r: dict):
-        self.isNew = r.get('isNew', True)
-        self.inQuiz = r.get('inQuiz', False)
-        self.previewQuiz = r.get('previewQuiz', False)
-        self.justFinished = r.get('justFinished', False)
-        self.quizId = r.get('quizId', None)
-        self.lastQuizId = r.get('lastQuizId', None)
-        self.curQuestion = r.get('curQuestion', None)
+        self.is_new = r.get('is_new', True)
+        self.in_quiz = r.get('in_quiz', False)
+        self.preview_quiz = r.get('preview_quiz', False)
+        self.just_finished = r.get('just_finished', False)
+        self.quiz_id = r.get('quiz_id', None)
+        self.lastquiz_id = r.get('lastquiz_id', None)
+        self.cur_question = r.get('cur_question', None)
         self.result = r.get('result', {})
 
     def toDict(self):
@@ -23,85 +24,16 @@ with open('all_quizzes.json', encoding='utf-8') as file:
     quizzes = json.load(file)['quizzes']
 
 
-class _nlu:
-    def __init__(self, r: dict):
-        self.tokens: list[str] = r['tokens']
-        self.entities: list[dict] = r['entities']
-        self.intents: list[dict] = r['intents']
-
-
-class _sessionUser:
-    def __init__(self, r: dict):
-        self.user_id: str = r['user_id']
-        self.access_token: str = r.get('access_token', None)
-
-    def todict(self):
-        return vars(self)
-
-
-class _reqSession:
-    def __init__(self, r: dict):
-        self.message_id: int = r['message_id']
-        self.session_id: str = r['session_id']
-        self.skill_id: str = r['skill_id']
-        self.user_id: str = r['user_id']
-        self.user = _sessionUser(r['user'])
-        self.application = r['application']
-        self.new: bool = r['new']
-
-    def todict(self):
-        a = {}
-        for key, value in vars(self).items():
-            if not isinstance(value, (str, int, bool, list, dict)):
-                a[key] = value.todict()
-            else:
-                a[key] = value
-        return a
-
-
-class _request:
-    def __init__(self, r: dict):
-        self.type: str = r['type']
-        self.nlu = _nlu(r['nlu'])
-        self.command: str = r.get('command', None)
-        self.original_utterance: str = r.get('original_utterance', None)
-        self.markup: dict = r.get('markup', None)
-        self.payload: dict = r.get('payload', None)
-
-    def todict(self):
-        a = {}
-        for key, value in vars(self).items():
-            if not isinstance(value, (str, int, bool, list, dict)):
-                a[key] = value.todict()
-            else:
-                a[key] = value
-        return a
-
-
-class Req:
-    def __init__(self, r: dict):
-        self.meta = r['meta']
-        self.request = _request(r['request'])
-        self.session = _reqSession(r['session'])
-        self.state: dict = r.get('state', None)
-        self.version: str = r['version']
-        self.result = {}
-
-
 def main(event, context):
-    print(f'EVENT: {event!r}')
-    print(f'CONTEXT: {context!r}')
-
-    req = Req(event)
     user = User(event.get('state', {}).get('session', {}))
     res = {
-        'session': req.session.todict(),
-        'version': req.version,
+        'session': event['session'],
+        'version': event['version'],
         'response': {
             'end_session': False
         }
     }
-    handle_dialog(req, res, user)
+    handle_dialog(event, res, user)
     res['session_state'] = user.toDict()
 
     cutTooLongText(res)
@@ -115,127 +47,146 @@ def cutTooLongText(res):
         return
 
 
-def handle_dialog(req: Req, res, user: User):
-    if req.session.new:
+def handle_dialog(req: dict, res, user: User):
+    if req['session']['new']:
         send_greetings(res)
-        send_yesnoSuggest(res)
+        send_yesno_suggest(res)
         return
 
-    intents = req.request.nlu.intents
-    if user.isNew:
-        user.isNew = False
+    intents = req['request']['nlu']['intents']
+    if user.is_new:
+        user.is_new = False
         if 'YANDEX.CONFIRM' in intents:
             preview_quiz(user, res, random.randint(0, len(quizzes) - 1))
             return
         elif 'YANDEX.REJECT' in intents:
             res['response']['text'] = 'Хорошо, тогда можешь посмотреть топ викторин'
-            send_idleSuggests(res)
+            send_idle_suggests(res)
             return
 
-    if user.previewQuiz:
-        # user.previewQuiz = False
+    if user.preview_quiz:
+        # user.preview_quiz = False
         if 'YANDEX.CONFIRM' in intents:
             start_quiz(user)
             handle_quiz(req, res, user, False)
-            send_quizSuggests(res, user)
+            send_quiz_suggests(res, user)
             return
         elif 'YANDEX.REJECT' in intents:
             exit_quiz(user)
             res['response']['text'] = random.choice(
                 phraseVariables['exit_from_quiz'])
-            send_idleSuggests(res)
+            send_idle_suggests(res)
             return
 
-    if user.inQuiz:
-        quiz = quizzes[user.quizId]
-        if user.curQuestion < len(quiz['questions']) - 1:
+    if user.in_quiz:
+        quiz = quizzes[user.quiz_id]
+        if user.cur_question < len(quiz['questions']) - 1:
             if 'STOP' in intents:
                 exit_quiz(user)
                 res['response']['text'] = random.choice(
                     phraseVariables['exit_from_quiz'])
-                send_idleSuggests(res)
+                send_idle_suggests(res)
                 return
-            handle_quiz(req, res, user, 'REPEAT_QUESTION' not in intents)
-            send_quizSuggests(res, user)
-            return
-        elif user.curQuestion == len(quiz['questions']) - 1:
-            send_quizResult(req, res, user)
+            if handle_quiz(req, res, user, 'REPEAT_QUESTION' not in intents):
+                send_quiz_suggests(res, user)
+                return
+        elif user.cur_question == len(quiz['questions']) - 1:
+            send_quiz_result(req, res, user)
             return
 
-    if not user.inQuiz:
-        if user.justFinished:
+    if 'YANDEX.HELP' in intents:
+        res['response']['text'] = "Викторины состоят из нескольких вопросов, в ответ на каждый ты\
+можешь выбрать один вариант из нескольких предложенных. Ответив на каждый вопрос, ты узнаешь результат"
+        user.preview_quiz = False
+        if user.in_quiz:
+            send_quiz_suggests(res, user)
+        else:
+            send_idle_suggests(res)
+        return
+
+    if not user.in_quiz:
+        if user.just_finished:
             if 'YANDEX.REPEAT' in intents:
                 res['response']['text'] = random.choice(
                     phraseVariables['repeat_quiz'])
-                user.justFinished = False
-                user.inQuiz = True
-                send_idleSuggests(res)
+                user.just_finished = False
+                user.in_quiz = True
+                send_idle_suggests(res)
                 return
         if 'START_QUIZ' in intents:
-            quiz = req.request.nlu.intents['START_QUIZ']['slots']['quiz_title']['value']
+            user.preview_quiz = False
+            quiz = intents['START_QUIZ']['slots']['quiz_title']['value']
             res['response']['text'] = f'Вы захотели запустить викторину {quiz}'
-            send_idleSuggests(res)
+            send_idle_suggests(res)
             return
         if 'SHOW_TOP' in intents:
-            res['response']['text'] = random.choice(
-                phraseVariables['show_top'])
-            send_idleSuggests(res)
+            user.preview_quiz = False
+            res['response']['text'] = 'Вывела топ'
+            send_idle_suggests(res)
             return
         if 'START_RANDOM_QUIZ' in intents:
+            user.preview_quiz = False
             preview_quiz(user, res, random.randint(0, len(quizzes) - 1))
             return
         if 'CREATE_QUIZ' in intents:
+            user.preview_quiz = False
             res['response']['text'] = random.choice(
                 phraseVariables['create_quiz'])
-            send_idleSuggests(res)
-            send_creationSuggest(res)
+            send_idle_suggests(res)
+            send_creation_suggest(res)
             return
         if 'WHAT_YOU_CAN_DO' in intents:
+            user.preview_quiz = False
             res['response']['text'] = "Я могу запустить случайную или выбранную тобой викторину, \
-могу вывести топ самых проходимых. А если ты не нашел той викторины, которую хотел пройти, \
-можешь сам ее создать."
-            send_idleSuggests(res)
+    могу вывести топ самых проходимых. А если ты не нашел той викторины, которую хотел пройти, \
+    можешь сам ее создать."
+            send_idle_suggests(res)
             return
-        if 'YANDEX.HELP' in intents:
-            res['response']['text'] = "Викторины состоят из нескольких вопросов, в ответ на каждый ты\
-можешь выбрать один вариант из нескольких предложенных. Ответив на каждый вопрос, ты узнаешь результат"
-            send_idleSuggests(res)
-            return
-    if user.justFinished and 'REPEAT_QUIZ' in intents:
-        preview_quiz(user, res, user.lastQuizId)
+
+    if user.just_finished and 'REPEAT_QUIZ' in intents:
+        preview_quiz(user, res, user.lastquiz_id)
         return
 
-    user.justFinished = False
-    user.isNew = False
-    send_error(res)
-    if user.inQuiz:
-        if user.curQuestion == -1:
-            send_yesnoSuggest(res)
-        else:
-            send_quizSuggests(res, user)
+    if 'STOP' in intents:
+        res['response']['text'] = 'До встречи в следующий раз!'
+        res['response']['end_session'] = True
+        return
+
+    user.just_finished = False
+    user.is_new = False
+    if user.in_quiz:
+        send_in_quiz_error(res)
     else:
-        send_idleSuggests(res)
+        send_error(res)
+    if user.in_quiz:
+        if user.cur_question == -1:
+            send_yesno_suggest(res)
+        else:
+            send_quiz_suggests(res, user)
+    else:
+        send_idle_suggests(res)
 
 
-def handle_quiz(req: Req, res, user: User, next_=True):
+def handle_quiz(req, res, user: User, next_=True):
     # Получение ответа
-    if user.curQuestion != -1 and next_:
+    if user.cur_question != -1 and next_:
         if not check_quizAnswer(req, res, user):
-            return
+            return False
 
     # Следующий вопрос
-    user.curQuestion += 1 if next_ else 0
-    question = quizzes[user.quizId]['questions'][user.curQuestion]
+    user.cur_question += 1 if next_ else 0
+    question = quizzes[user.quiz_id]['questions'][user.cur_question]
     title = question['title']
     answers = [i['title'] for i in question['answers']]
     res['response']['text'] = title + "\n" + \
         "\n".join(f"{i}. {row}" for i, row in enumerate(answers, start=1))
+    return True
 
 
-def check_quizAnswer(req: Req, res, user: User):
-    intents = req.request.nlu.intents
-    quiz = quizzes[user.quizId]
-    question = quiz['questions'][user.curQuestion]
+def check_quizAnswer(req, res, user: User):
+    intents = req['request']['nlu']['intents']
+    quiz = quizzes[user.quiz_id]
+    question = quiz['questions'][user.cur_question]
     answers = question['answers']
     if not ('CHOOSE_ANSWER_2' in intents or 'CHOOSE_ANSWER_1' in intents):
         send_error(res)
@@ -258,30 +209,30 @@ def check_quizAnswer(req: Req, res, user: User):
     return True
 
 
-def send_quizResult(req: Req, res, user: User):
+def send_quiz_result(req, res, user: User):
     # Проверка последнего ответа
     check_quizAnswer(req, res, user)
 
     # Вывод результата
-    quiz = quizzes[user.quizId]
+    quiz = quizzes[user.quiz_id]
     if quiz['type'] == 'person':
         result = max(user.result.items(), key=lambda x: x[1])[0]
         text = f'Ты - {result}'
         res['response']['text'] = text
-        res['response']['card'] = {}
-
         character = [i for i in quiz['characters'] if i['name'] == result][0]
-        card = res['response']['card']
-        card['type'] = 'BigImage'
-        card['title'] = text
-        card['description'] = character['description']
-        card['image_id'] = character['image']
+        if character['image']:
+            res['response']['card'] = {}
+            card = res['response']['card']
+            card['type'] = 'BigImage'
+            card['title'] = text
+            card['description'] = character['description']
+            card['image_id'] = character['image']
     elif quiz['type'] == 'percent':
         result = round(
-            user.result / len(quizzes[user.quizId]['questions']) * 100)
+            user.result / len(quizzes[user.quiz_id]['questions']) * 100)
         res['response']['text'] = f'Ваш результат - {result}%. Вы можете пройти заново эту викторину или начать другую'
 
-    send_idleSuggests(res)
+    send_idle_suggests(res)
     res['response']['buttons'] = [
         {
             "title": "Заново 🔁",
@@ -290,39 +241,39 @@ def send_quizResult(req: Req, res, user: User):
     ] + res['response']['buttons']
 
     # Выход из Виткторины
-    user.lastQuizId = user.quizId
-    user.inQuiz = False
-    user.quizId = None
-    user.curQuestion = None
-    user.justFinished = True
+    user.lastquiz_id = user.quiz_id
+    user.in_quiz = False
+    user.quiz_id = None
+    user.cur_question = None
+    user.just_finished = True
     user.result = {}
     return
 
 
 def preview_quiz(user: User, res, quiz_id):
-    user.quizId = quiz_id
-    user.previewQuiz = True
+    user.quiz_id = quiz_id
+    user.preview_quiz = True
 
     # Превью
-    title = quizzes[user.quizId]['title']
-    description = quizzes[user.quizId]['description']
-    creator = quizzes[user.quizId]['creator']
-    preview = quizzes[user.quizId]['image']
+    title = quizzes[user.quiz_id]['title']
+    description = quizzes[user.quiz_id]['description']
+    creator = quizzes[user.quiz_id]['creator']
+    preview = quizzes[user.quiz_id]['image']
     res['response']['text'] = f"{title}\n{description}\nСоздатель:{creator}\nНачинаем?"
-    if quizzes[user.quizId].get('image', None):
+    if quizzes[user.quiz_id]['image']:
         res['response']['card'] = {}
         card = res['response']['card']
         card['type'] = 'BigImage'
         card['image_id'] = preview
         card['title'] = f'{title}'
         card['description'] = f'{description}\nСоздатель: {creator}\nНачинаем?'
-    send_yesnoSuggest(res)
+    send_yesno_suggest(res)
 
 
 def start_quiz(user: User):
-    user.inQuiz = True
-    user.curQuestion = 0
-    quiz = quizzes[user.quizId]
+    user.in_quiz = True
+    user.cur_question = 0
+    quiz = quizzes[user.quiz_id]
     if quiz['type'] == 'person':
 
         user.result = {character['name']
@@ -332,14 +283,14 @@ def start_quiz(user: User):
 
 
 def exit_quiz(user: User):
-    user.quizId = None
-    user.curQuestion = None
-    user.inQuiz = False
-    user.justFinished = False
+    user.quiz_id = None
+    user.cur_question = None
+    user.in_quiz = False
+    user.just_finished = False
     user.result = {}
 
 
-def send_idleSuggests(res):
+def send_idle_suggests(res):
     hide = True
     res['response']['buttons'] = [
         {
@@ -365,9 +316,9 @@ def send_idleSuggests(res):
     ]
 
 
-def send_quizSuggests(res, user: User):
-    answers = len(quizzes[user.quizId]['questions']
-                  [user.curQuestion]['answers'])
+def send_quiz_suggests(res, user: User):
+    answers = len(quizzes[user.quiz_id]['questions']
+                  [user.cur_question]['answers'])
     res['response']['buttons'] = [
         *[
             {
@@ -387,7 +338,7 @@ def send_quizSuggests(res, user: User):
     ]
 
 
-def send_creationSuggest(res):
+def send_creation_suggest(res):
     res['response']['buttons'] = res['response'].get('buttons', []) + [
         {
             "title": "Создать",
@@ -402,7 +353,7 @@ def send_greetings(res):
     res['response']['tts'] = "Привет! Я управляющая викторинами ЯQuiz. У меня есть викторины для всех и каждого. Начнем случайную викторину?"
 
 
-def send_yesnoSuggest(res):
+def send_yesno_suggest(res):
     res['response']['buttons'] = [
         {
             "title": random.choice(phraseVariables['yes']),
@@ -415,5 +366,26 @@ def send_yesnoSuggest(res):
     ]
 
 
+def send_in_quiz_error(res):
+    res['response']['text'] = random.choice(phraseVariables['quiz_error'])
+
+
 def send_error(res):
     res['response']['text'] = "Извини, я не поняла, повтори пожалуйста"
+
+
+def upload_image(image_bits):
+    alice_url = 'https://dialogs.yandex.net/api/v1/skills/84636ff1-4b07-4385-ab89-21a817d2a74d/images'
+    headers = {
+        'Authorization': 'OAuth y0_AgAAAAA955vEAAT7owAAAADfy__rBzw4lsvtRomHf17r4hPBvgCP3Os'}
+    files = {'file': image_bits}
+    response = requests.post(url=alice_url, headers=headers, files=files)
+    return response.json()
+
+
+def delete_image(image_id):
+    alice_url = f'https://dialogs.yandex.net/api/v1/skills/84636ff1-4b07-4385-ab89-21a817d2a74d/images/{image_id}'
+    headers = {
+        'Authorization': 'OAuth y0_AgAAAAA955vEAAT7owAAAADfy__rBzw4lsvtRomHf17r4hPBvgCP3Os'}
+    response = requests.delete(url=alice_url, headers=headers)
+    return response.json()

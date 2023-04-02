@@ -6,22 +6,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../static/css/style.css">
-    <title>ЯQuiz | Создание Quiz'а</title>
 </head>
 <header>
     <a class="skill_name" href="/">
         <span>Я</span>Quiz
     </a>
     <div class="user_wrapper">
-        {% if current_user.is_authenticated %}
-            <a>
-                {{ current_user.username }}
-            </a>
-             
-            <a href="/signout">
-                Выход
-            </a>
-            {% else %}
             <a href="/signin">
                 Вход
             </a>
@@ -29,10 +19,13 @@
             <a href="/signup">
                 Регестрация
             </a>
-            {% endif %}
     </div>
 </header>
 
-{% block content %} {% endblock %}
+<body>
+    <div class="central_div">
+        Для начала, зарегестрируйтесь, или войдите в аккаунт
+    </div>
+</body>
 
 </html>

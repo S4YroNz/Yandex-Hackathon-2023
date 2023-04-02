@@ -5,7 +5,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from flask_restful import abort, Api
 import requests
 import logging
-from io import BytesIO
+import base64
 from werkzeug.datastructures import ImmutableMultiDict, FileStorage
 
 from forms.user import *
@@ -34,15 +34,10 @@ def load_user(user_id):
 
 
 @app.route('/')
+@login_required
 def index():
-    # отображаем все доступные квизы ( по сколько-то на страничу, потом догружаем)
-    # по хорошему нужны:
-    # поиск
-    # раделение по жанрам
-    # навигация
-    # фильтр по дате создания, чтобы новые чекать.
     db_sess = db_session.create_session()
-    quizzes = db_sess.query(Quiz).all()
+    quizzes = db_sess.query(Quiz).filter(Quiz.owner_id == current_user.id).all()
     return render_template('index.html', quizzes=quizzes)
 
 
@@ -91,12 +86,23 @@ def logout():
     logout_user()
     return redirect("/")
 
+@login_manager.unauthorized_handler
+def unauthorized():
+    return render_template('unauthorized.html')
 
-def get_image(files: ImmutableMultiDict[FileStorage], name: str):
-    print(files[name].filename)
-    if files[name].filename == '':
+
+def get_image(files, name):
+    if not files[name].filename:
         return
-    return BytesIO(files[name].read())
+
+    file: FileStorage = files[name]
+    file.save('temp.png')
+    with open('temp.png', 'rb') as f:
+        data = f.read()
+    os.remove('temp.png')
+
+    return base64.encodebytes(data).decode('utf-8')
+
 
 @app.route('/createquiz',  methods=('GET', 'POST'))
 @login_required
@@ -114,49 +120,54 @@ def create_quiz():
         }
 
         if quiz['type'] == 'person':
-            collect_personQuiz_data(form, files, quiz)
+            collect_person_quiz_data(form, files, quiz)
         else:
-            collect_percentQuiz_data(form, files, quiz)
+            collect_percent_quiz_data(form, quiz)
 
-        print(quiz)
+        # Проверка
+        # if len(quiz['title']) not in range(10, 100):
+        #     # Длина названия
+        #     return render_template('createquiz.html', error='Название должно лежать в пределах от 10 до 100 символов')
+        # elif len(quiz['description']) > 600:
+        #     # Длина описания
+        #     return render_template('createquiz.html', error='Ошибка')
+        # elif quiz.get('character', 0) > 8:
+        #     # Количество пресонажей
+        #     return render_template('createquiz.html', error='Ошибка')
+        # elif any(len(i['name']) > 50 for i in quiz['characters']):
+        #     # Длина имени персонажей
+        #     return render_template('createquiz.html', error='Ошибка')
+        # elif any(len(i['description']) > 200 for i in quiz['characters']):
+        #     # Длина описания персонажей
+        #     return render_template('createquiz.html', error='Ошибка')
+        # elif len(quiz['questions']) > 20:
+        #     # Количество вопросов
+        #     return render_template('createquiz.html', error='Ошибка')
+        # elif any(len(i['answers']) > 8 for i in quiz['questions']):
+        #     # Количество ответов на вопросы
+        #     return render_template('createquiz.html', error='Ошибка')
+        # elif any(len(i['title']) > 50 for i in quiz['questions']):
+        #     # Длина вопросов
+        #     return render_template('createquiz.html', error='Ошибка')
 
-        # print(form)
-        # print(files)
-
-        # quiz_type = form['quiz_type']
-        # if quiz_type == 'person':
-        #     handle_person_quiz(form, files, quiz)
-        # elif quiz_type == 'percent':
-        #     handle_percent_quiz(form, quiz)
-
-        # image = resize(files['quiz_preview'].stream)
-        # if files['quiz_preview']:
-        #     alice = upload_image(resize(files['quiz_preview'].stream, (1000, 700)))
-        #     quiz['image'] = alice['image']['id']
+        with open('output.json', 'w', encoding='utf-8') as file:
+            json.dump(quiz, file, ensure_ascii=False)
 
         return redirect('/')
-    return render_template('createquiz.html')
+    return render_template('createquiz.html', error='')
 
 
-# @login_manager.unauthorized_handler
-# def unauthorized():
-#     return 'Сначала войдите в аккаунт'
-
-
-def collect_personQuiz_data(form: ImmutableMultiDict, files: ImmutableMultiDict[str, FileStorage], quiz: dict):
+def collect_person_quiz_data(form: ImmutableMultiDict, files: ImmutableMultiDict[str, FileStorage], quiz: dict):
     characters = collect_data(form, 'person{i}', '{i}')
     quiz['characters'] = []
     for name, character in characters.items():
-        imageBytes = BytesIO()
-        image = resize(files[f'{name}_image'].stream)
-        image.show()
-        image.save(imageBytes, format=image.format)
+        imgBytes = get_image(files, f'{name}_image')
 
         quiz['characters'].append(
             {
                 "name": character,
                 "description": form[f'{name}_description'],
-                "image": imageBytes
+                "image": imgBytes
             }
         )
 
@@ -170,15 +181,36 @@ def collect_personQuiz_data(form: ImmutableMultiDict, files: ImmutableMultiDict[
             }
         )
         answers = quiz['questions'][-1]['answers']
-        for answer_name, title in collect_data(form, question_name+'_answer{i}', '{i}'):
+        for answer_name, title in collect_data(form, question_name+'_answer{j}', '{j}').items():
+            print(f'ANSWER {answer_name}', form[f'{answer_name}_select'])
             answers.append(
                 {
-                    "title": title
+                    "title": title,
+                    "character": quiz['characters'][int(form[f'{answer_name}_select'][len('person'):]) - 1]['name']
                 }
             )
 
 
-def collect_percentQuiz_data(form: ImmutableMultiDict, files: ImmutableMultiDict[str, FileStorage], quiz: dict):
+def collect_percent_quiz_data(form: ImmutableMultiDict, quiz: dict):
+    questions = collect_data(form, 'question{i}', '{i}')
+    quiz['questions'] = []
+    for question_name, question in questions.items():
+        answers = []
+        print(*enumerate(collect_data(form, question_name+'_answer{j}', '{j}').items(), start=1))
+        print(form[f'{question_name}_radio'])
+        for i, title in enumerate(collect_data(form, question_name+'_answer{j}', '{j}').values(), start=1):
+            answers.append(
+                {
+                    "title": title,
+                    "is_true": int(form[f'{question_name}_radio']) == i
+                }
+            )
+        quiz['questions'].append(
+            {
+                "title": question,
+                "answers": answers
+            }
+        )
     pass
 
 
@@ -196,89 +228,45 @@ def collect_data(data: ImmutableMultiDict, template: str, iterator: str):
 @app.route('/quiz/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_quiz(id):
-    form = QuizForm()
     if request.method == "GET":
         db_sess = db_session.create_session()
-        quiz = db_sess.query(Quiz).filter(Quiz.id == id,
-                                          Quiz.user == current_user  # or Quiz.creator???
-                                          ).first()
+        quiz = db_sess.query(Quiz).filter(Quiz.id == id, Quiz.owner_id == current_user.id).first()
         if quiz:
-            # переносим все данные квиза в соответствующие поля
-            # + берем из json
-            form.type.data = quiz.type
-            form.title.data = quiz.title
-            form.description.data = quiz.description
-            name_file = quiz.content_file
-            with open(name_file, 'w') as file:
-                quiz_json = json.load(file)
-            # берем json файл и каким то макаром переносим список персонажей
-            # и каждый вопрос в свой блок
-
+            with open('output.json') as file: # Получение данных из бд
+                data = json.load(file)
+            return render_template('quiz.html', data=data)
         else:
-            abort(404)
-    if form.validate_on_submit():
-        db_sess = db_session.create_session()
-        quiz = db_sess.query(Quiz).filter(Quiz.id == id,
-                                          Quiz.user == current_user
-                                          ).first()
-        if quiz:
-            quiz.type = form.type.data
-            quiz.title = form.title.data
-            quiz.description = form.description.data
-            # каким-то макаром парсим все наши вопросы и персонажей
-            quiz_json = {
-                'characters': [field.data for field in form.characters],
-                'questions': []
-            }
-            for formfield in form.questions:
-                question_json = {
-                    'question': formfield.question.data,
-                    'answers': []
-                }
-                for field in formfield.answers:
-                    answer_json = {
-                        'answer': field.answer.data,
-                        # проверить получаются ли так нужные данные списком
-                        'characters': field.characters.data
-                    }
-                    question_json['answers'].append(answer_json)
-                quiz_json['questions'].append(question_json)
-
-            name_file = quiz.content_file
-            with open(name_file, 'w') as file:
-                json.dump(quiz_json, file)  # перезаписываем json
-
-            db_sess.commit()
-            return redirect('/')
-        else:
-            abort(404)
-    return render_template('createquiz.html',
-                           title='Редактирование квиза',
-                           form=form
-                           )
+            return render_template('noquiz.html')
+    return abort(404)
 
 
-@app.route('/delete_quiz/<int:id>', methods=['GET', 'POST'])
+@app.route('/deletequiz/<int:id>')
 @login_required
 def delete_quiz(id):
     db_sess = db_session.create_session()
-    quiz = db_sess.query(Quiz).filter(Quiz.id == id,
-                                      Quiz.user == current_user
-                                      ).first()
+    quiz = db_sess.query(Quiz).filter(Quiz.id == id, Quiz.owner_id == current_user.id).first()
     if quiz:
-        os.remove(f'/путь/{quiz.content_file}')  # дописать путь
-        db_sess.delete(quiz)
-        db_sess.commit()
+        os.remove('output.json')
+        # db_sess.delete(quiz)
+        # db_sess.commit()
     else:
         abort(404)
     return redirect('/')
 
 
-def upload_image(image_bits):
+def main():
+    db_session.global_init('db/ya_quiz.db')
+    api.add_resource(quizzes_resources.QuizResource, "/api/quiz/<int:quiz_id>")
+    api.add_resource(quizzes_resources.QuizListResource, "/api/quiz")
+    app.run(port=8080, host='127.0.0.1')
+
+
+def upload_image(img_bytes):
     alice_url = 'https://dialogs.yandex.net/api/v1/skills/84636ff1-4b07-4385-ab89-21a817d2a74d/images'
     headers = {
-        'Authorization': 'OAuth y0_AgAAAAA955vEAAT7owAAAADfy__rBzw4lsvtRomHf17r4hPBvgCP3Os'}
-    files = {'file': image_bits}
+        'Authorization': 'OAuth y0_AgAAAAA955vEAAT7owAAAADfy__rBzw4lsvtRomHf17r4hPBvgCP3Os'
+    }
+    files = {'file': img_bytes}
     response = requests.post(url=alice_url, headers=headers, files=files)
     return response.json()
 
@@ -289,13 +277,6 @@ def delete_image(image_id):
         'Authorization': 'OAuth y0_AgAAAAA955vEAAT7owAAAADfy__rBzw4lsvtRomHf17r4hPBvgCP3Os'}
     response = requests.delete(url=alice_url, headers=headers)
     return response.json()
-
-
-def main():
-    db_session.global_init('db/ya_quiz.db')
-    api.add_resource(quizzes_resources.QuizResource, "/api/quiz/<int:quiz_id>")
-    api.add_resource(quizzes_resources.QuizListResource, "/api/quiz")
-    app.run(port=8080, host='127.0.0.1')
 
 
 if __name__ == "__main__":

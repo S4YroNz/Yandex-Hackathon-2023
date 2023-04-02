@@ -17,14 +17,6 @@ a {
     color: inherit
 }
 
-.debug {
-    outline: 1px solid rgba(255 0 0 / .3);
-}
-
-.debug * {
-    outline: 1px solid rgba(255 0 0 / .3);
-}
-
 html,
 body {
     min-height: 100vh;
@@ -36,10 +28,10 @@ body {
     --border-radius: 10px;
     --border-radius-smaller: 6px;
     --clr-grey: #cccccc;
-    /* --clr-main: #b12bff; */
-    --clr-main: #439DFF;
-    /* --clr-main-darker: #7c1cb4; */
-    --clr-main-darker: #2874c5;
+    --clr-main: #b12bff;
+    /* --clr-main: #439DFF; */
+    --clr-main-darker: #7c1cb4;
+    /* --clr-main-darker: #2874c5; */
     --clr-red: #fc3d17;
     --clr: #c48989;
     --main-text: 'Montserrat', sans-serif;
@@ -115,8 +107,8 @@ header .user_wrapper a:hover {
 
 .float_panels .panel {
     position: relative;
-    overflow: hidden;
     display: flex;
+    overflow: hidden;
     flex-direction: column;
     width: 100%;
 
@@ -144,11 +136,11 @@ header .user_wrapper a:hover {
     text-overflow: "..";
 }
 
-.panel .quiz .edit_quiz {
+.panel .quiz .delete_quiz {
     display: flex;
     padding: 20px;
     color: white;
-    background: var(--clr-main);
+    background: var(--clr-red);
 }
 
 
@@ -162,6 +154,8 @@ header .user_wrapper a:hover {
 
 .type_select {
     display: grid;
+    border-radius: var(--border-radius);
+    overflow: hidden;
     grid-template-columns: 1fr 1fr;
 }
 
@@ -170,7 +164,7 @@ header .user_wrapper a:hover {
     font-size: 1.1rem;
     font-weight: 500;
     padding: 10px;
-    
+
     width: 100%;
     color: var(--clr-main);
     background-color: whitesmoke;
@@ -186,19 +180,23 @@ header .user_wrapper a:hover {
     border-top: none;
 }
 
-.panel-group .panel:first-child {
+.panel-group>:first-child {
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
 }
 
-.panel-group .panel:last-child {
+.panel-group>:last-child {
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
     border-top-left-radius: 0;
     border-top-right-radius: 0;
 }
 
-.panel-group :not(:last-child, :first-child) {
+/* .panel-group>:not(:last-child, :first-child) {
     border-radius: 0;
-}
+} */
 
 /* ~~~~~~~~~~Содержимое панелей~~~~~~~~~~ */
 .panel-content {
@@ -289,11 +287,22 @@ input[type="file"] {
     display: none !important;
 }
 
-.image_upload-error {
+.error {
     width: 100%;
     display: flex;
+    position: absolute;
+    height: 30px;
+    display: flex;
     justify-content: center;
-    color: var(--clr-red);
+    align-items: center;
+    background-color: var(--clr-red);
+    width: 80%;
+    bottom: -20px;
+    z-index: 10;
+    left: 10%;
+    border-radius: var(--border-radius-smaller);
+    color: white;
+    justify-content: center;
 }
 
 .image_preview {
@@ -391,8 +400,8 @@ textarea {
 
 .input_list-element::before {
     content: "";
-    width: 10px;
-    height: 10px;
+    min-width: 10px;
+    min-height: 10px;
     border-radius: 50%;
     margin: 0 5px;
     background-color: var(--clr-grey);
@@ -401,7 +410,7 @@ textarea {
 
 .input_list-element:hover::before {
     border-radius: 0;
-    height: 3px;
+    min-height: 3px;
     background-color: var(--clr-red);
 }
 
@@ -495,7 +504,7 @@ textarea {
     background-color: transparent;
 }
 
-.person_type_selected .input_list-element .input-file-group *{
+.person_type_selected .input_list-element .input-file-group * {
     font-size: 1rem !important;
 }
 
@@ -510,7 +519,7 @@ textarea {
 }
 
 /* ~~~~~~~~~~~ Кнопка отправления, создания формы ~~~~~~~~~~ */
-:is(button[type="submit"], .create_quiz) {
+:is(:is(button, input)[type="submit"], .create_quiz) {
     font-family: var(--main-text);
     font-weight: 500;
     font-size: 1.2rem;
@@ -529,7 +538,7 @@ textarea {
     transition: .2s ease;
 }
 
-:is(button[type="submit"], .create_quiz):hover {
+:is(:is(button, input)[type="submit"], .create_quiz):hover {
     border: 1px solid var(--clr-main);
     color: var(--clr-main);
     box-shadow: 0 0 0 0 var(--clr-main);
@@ -552,8 +561,9 @@ textarea {
     .panel {
         border-radius: 0 !important;
     }
-    
-    .addPanel, button[type="submit"] {
+
+    .addPanel,
+    button[type="submit"] {
         width: 90%;
     }
 

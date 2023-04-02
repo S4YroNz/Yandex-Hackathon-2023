@@ -5,6 +5,7 @@ const panel = `
         <ul class="input_list">
         </ul>
         <button class="addRow" data-string="answer" data-name="question{!i!}" data-placeholder="Вариант {!j!}" form="">Добавить ответ</button>
+        <div class="max_answer-error error hide">Маскимальное количество вопросов - 8</div>
     </div>
 </div>`
 
@@ -13,14 +14,16 @@ const rowTypes = {
     <input class="input_list-element-text" type="text" name="question{i}_answer{j}"
     data-name="question{!i!}_answer{!j!}" data-placeholder="Вариант {!j!}"
     placeholder="Вариант {j}">
-    <input class="percent_select" type="radio" name="question{i}_radio" value="{j}">
-    <select class="person_select" name="question{i}_answer{j}_select" id=""></select>
+    <div class="max_answer-error error hide">Максимальное количество символов - 50</div>
+    <input class="percent_select" type="radio" name="question{i}_radio" data-name="question{!i!}_radio" value="{j}">
+    <select class="person_select" name="question{i}_answer{j}_select" data-name="question{!i!}_answer{!j!}_select" id=""></select>
     </li>`,
     person: `<div class="person_container">
     <li class="input_list-element">
         <input class="input_list-element-text" type="text" name="person{j}"
             data-name="person{!j!}" data-placeholder="Персонаж {!j!}"
             placeholder="Персонаж {j}">
+        <div class="max_person_name-error error hide">Максимальное количество символов - 50</div>
     </li>
     <div class="input-file-group">
         <div class="preview_container hide">
@@ -53,6 +56,7 @@ const rowTypes = {
         <div class="image_upload-error hide">Файл не является изображением</div>                                
     </div>
     <textarea name="person{j}_description" data-name="person{!j!}_description" placeholder="Опиасание персонажа {j}" data-placeholder="Описание персонажа {!j!}" rows="3"></textarea>
+    <div class="max_person_description-error error hide">Максимальное количество символов - 200</div>
 </div>`
 }
 const elemError = `
@@ -72,13 +76,16 @@ function createElementFromHTML(htmlString) {
 function initAddPanelButton() {
     createPanelButton.addEventListener('click', () => {
         var newId = form.querySelectorAll('.quiz_panel').length + 1
+        if (newId > 20) {
+            showError(document.querySelector('.max_panel-error'))
+            return
+        }
         var newPanel = createElementFromHTML(
             panel.replaceAll('{i}', newId)
         )
         form.insertBefore(newPanel, createPanelButton)
         init_addRow(newPanel)
         var row = addRow(newPanel)
-        console.log(row);
         row.querySelector('.percent_select').checked = true
     })
 }
@@ -105,6 +112,14 @@ function addRow(panel) {
 
     var rowInd = rows.length + 1
     var rowType = btn.getAttribute('data-string')
+    if (rowInd > 8) {
+        if (rowType == 'answer') {
+            showError(panel.querySelector('.max_answer-error'))
+        } else if (rowType == 'person') {
+            showError(panel.querySelector('.max_person-error'))
+        }
+        return
+    }
     var newRow = createElementFromHTML(
         rowTypes[rowType].replaceAll('{i}', panel.id).replaceAll('{j}', rowInd)
     )
@@ -112,15 +127,37 @@ function addRow(panel) {
     init_deleteRow(newRow)
     list.appendChild(newRow)
 
-    if (panel.classList.contains('person_type_selected')) {
+    if (rowType == 'person') {
         newRow.querySelector('.input_list-element-text').addEventListener('change', (event) => {
             updateSelects(event.target.name, event.target.value)
         })
         initImgGroup(newRow)
-    }
-    else {
+        // Вывод ошибки
+        var personName = newRow.querySelector('input')
+        personName.addEventListener('input', () => {
+            if (personName.value.length > 50) {
+                showError(newRow.querySelector('.max_person_name-error'))
+                personName.value = personName.value.substring(0, 50)
+            }
+        })
+        var personDesc = newRow.querySelector('textarea')
+        personDesc.addEventListener('input', () => {
+            if (personDesc.value.length > 200) {
+                showError(newRow.querySelector('.max_person_description-error'))
+                personDesc.value = personDesc.value.substring(0, 200)
+            }
+        })
+    } else {
         fillSelect(newRow.querySelector('select'))
         selectType(newRow)
+        // Вывод ошибки
+        var answer = newRow.querySelector('input')
+        answer.addEventListener('input', () => {
+            if (answer.value.length > 50) {
+                showError(newRow.querySelector('.max_answer-error'))
+                answer.value = answer.value.substring(0, 50)
+            }
+        })
     }
     return newRow
 }
@@ -189,12 +226,10 @@ function fillSelect(select) {
 // Удаление элемента списка
 function deleteRow(row) {
     var list = row.parentNode
-    console.log(list)
-    console.log(row)
     list.removeChild(row)
     var panel = list.parentNode.parentNode
     var isPersonType = panel.classList.contains('person_type_selected')
-    if (isPersonType){
+    if (isPersonType) {
         var rows = list.querySelectorAll('.person_container')
     } else {
         var rows = list.querySelectorAll('.input_list-element')
@@ -204,15 +239,13 @@ function deleteRow(row) {
         deletePanel(panel)
         return
     }
-    
+
     for (let index = 0; index < rows.length; index++) {
         var element = rows[index]
         var input = element.querySelector('.input_list-element-text')
         input.placeholder = input.getAttribute('data-placeholder').replaceAll('{!j!}', index + 1)
         input.name = input.getAttribute('data-name').replaceAll('{!i!}', panel.id).replaceAll('{!j!}', index + 1)
-        console.log(panel);
-        if (isPersonType){
-            console.log(fileInput);
+        if (isPersonType) {
             var fileInput = element.querySelector('.person_image')
             var textarea = element.querySelector('textarea')
             fileInput.name = fileInput.getAttribute('data-name').replaceAll('{!j!}', index + 1)
@@ -223,7 +256,9 @@ function deleteRow(row) {
             fileInput.id = `personId${index + 1}`
         } else {
             var select = element.querySelector('.person_select')
-            select.name = select.getAttribute('data-name').replaceAll('{!j!}', index + 1)
+            select.name = select.getAttribute('data-name').replaceAll('{!i!}', panel.id).replaceAll('{!j!}', index + 1)
+            var input = element.querySelector('.percent_select')
+            input.value = index + 1
         }
     }
 }
@@ -243,12 +278,16 @@ function deletePanel(panel) {
         question.name = `question${num}`
         question.placeholder = `Вопрос ${num}`
 
-        var elements = panel.querySelectorAll('.input_list-element-text')
+        var elements = panel.querySelectorAll('.input_list-element')
         for (let eindex = 0; eindex < elements.length; eindex++) {
-            var input = elements[eindex]
-            input.name = select.getAttribute('data-name').replaceAll('{!i!}', qindex + 1).replaceAll('{!j!}', eindex + 1)
-            var select = parent.querySelector('.person_select')
-            select.name = select.getAttribute('data-name').replaceAll('{!j!}', eindex + 1)
+            const element = elements[eindex]
+            var input = element.querySelector('.input_list-element-text')
+            input.name = input.getAttribute('data-name').replaceAll('{!i!}', panel.id).replaceAll('{!j!}', eindex + 1)
+            var select = element.querySelector('.person_select')
+            select.name = select.getAttribute('data-name').replaceAll('{!i!}', panel.id).replaceAll('{!j!}', eindex + 1)
+            var input = element.querySelector('.percent_select')
+            input.name = input.getAttribute('data-name').replaceAll('{!i!}', panel.id)
+            input.value = eindex + 1
         }
     }
 }
@@ -355,7 +394,7 @@ function handleFile(img_group) {
     let file = input.files[0]
     var img_preview = img_group.querySelector('.image_preview')
     if (!validateType(file)) {
-        showError(img_group)
+        showError(img_group.querySelector('.image_upload-error'))
         deleteImage(img_group)
         return
     }
@@ -382,8 +421,7 @@ function validateType(file) {
     ].includes(file.name.split('.').pop())
 }
 
-function showError(img_group) {
-    var error = img_group.querySelector('.image_upload-error')
+function showError(error) {
     error.classList.remove('hide')
     setTimeout(function () { error.classList.add('hide') }, 3000)
 }
@@ -397,7 +435,7 @@ function previewDroppedFile(file, img) {
 }
 
 function initImgGroup(img_group) {
-    if (!img_group.classList.contains('input-file-group')){
+    if (!img_group.classList.contains('input-file-group')) {
         var img_group = img_group.querySelector('.input-file-group')
     }
 
@@ -450,3 +488,20 @@ if (hasTouch()) {
         }
     } catch (ex) { }
 }
+
+
+// Инициализация ошибки у название и описание
+var title = document.querySelector('input[name="quiz_title"]')
+title.addEventListener('input', () => {
+    if (title.value.length > 100) {
+        showError(document.querySelector('.quiz_title-error'))
+        title.value = title.value.substring(0, 100)
+    }
+})
+var desc = document.querySelector('textarea[name="quiz_description"]')
+desc.addEventListener('input', () => {
+    if (desc.value.length > 600) {
+        showError(document.querySelector('.quiz_description-error'))
+        desc.value = desc.value.substring(0, 600)
+    }
+})

@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../static/css/style.css">
-    <title>ЯQuiz</title>
 </head>
 <header>
     <a class="skill_name" href="/">
@@ -34,23 +33,9 @@
 </header>
 
 <body>
-    <div class="central_div float_panels">
-        <div class="panel main_panel">
-            <div class="panel-content">
-                <p class="title">Ваши Quiz'ы</p>
-            </div>
-        </div>
-        {% for quiz in quizzes %}
-        <div class="panel">
-            <div class="quiz">
-                <span class="quiz_title">{{ quiz.title }}</span>
-                <a class="delete_quiz" data-quiz-id="{{ quiz.id }}" href="">Удалить</a>
-            </div>
-        </div>
-        {% endfor %}
-        <a class="create_quiz" href="/createquiz">Создать Quiz</a>
+    <div class="central_div">
+        Такого квиза не существует или он не принадлежит вам
     </div>
-    <script src="../static/js/delete_quiz.js"></script>
 </body>
 
 </html>

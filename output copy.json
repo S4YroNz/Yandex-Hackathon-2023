@@ -1,0 +1,22 @@
+{
+    "title": "",
+    "description": "",
+    "creator": "bebra",
+    "image": null,
+    "type": "percent",
+    "questions": [
+        {
+            "title": "2",
+            "answers": [
+                {
+                    "title": "12",
+                    "is_true": false
+                },
+                {
+                    "title": "13",
+                    "is_true": true
+                }
+            ]
+        }
+    ]
+}

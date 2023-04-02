@@ -23,27 +23,26 @@
     <div class="central_div">
         <form class="float_panels" action="" method="post">
             {{ form.hidden_tag() }}
-            <div class="panel-group">
-                <div class="panel main_panel">
+            <div class="panel main_panel">
+                <div class="panel-group">
                     {{ form.username(class="input_padding", type="text", id="login", placeholder="Логин") }}
                     {% for error in form.username.errors %}
-                        <div class="alert alert-danger" role="alert">
-                            {{ error }}
-                        </div>
+                    <div class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </div>
                     {% endfor %}
-                </div>
-                <div class="panel">
                     {{ form.password(class="input_padding", type="text", id="password1", placeholder="Пароль") }}
                     {% for error in form.password.errors %}
-                        <div class="alert alert-danger" role="alert">
-                            {{ error }}
-                        </div>
+                    <div class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </div>
                     {% endfor %}
                 </div>
+                <div> {{ message }} </div>
             </div>
             {{form.submit(type="submit", value="Войти")}}
-            <div0> {{ message }} </div>
         </form>
     </div>
 </body>
+
 </html>

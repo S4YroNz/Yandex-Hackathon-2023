@@ -23,29 +23,26 @@
     <div class="central_div">
         <form class="float_panels" action="" method="post">
             {{form.hidden_tag()}}
-            <div class="panel-group">
-                <div class="panel main_panel">
+            <div class="panel main_panel">
+                <div class="panel-group">
                     {{ form.username(class="input_padding", type="text", id="login", placeholder="Логин") }}
                     {% for error in form.username.errors %}
-                        <p class="alert alert-danger" role="alert">
-                            {{ error }}
-                        </p>
+                    <p class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </p>
                     {% endfor %}
-                </div>
-                <div class="panel">
                     {{form.password(class="input_padding", type="text", id="password1", placeholder="Пароль")}}
                     {% for error in form.password.errors %}
-                        <p class="alert alert-danger" role="alert">
-                            {{ error }}
-                        </p>
+                    <p class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </p>
                     {% endfor %}
-                </div>
-                <div class="panel">
-                    {{ form.repeat_password(class="input_padding", type="text", id="password2", placeholder="Повторите пароль") }}
+                    {{ form.repeat_password(class="input_padding", type="text", id="password2", placeholder="Повторите
+                    пароль") }}
                     {% for error in form.repeat_password.errors %}
-                        <p class="alert alert-danger" role="alert">
-                            {{ error }}
-                        </p>
+                    <p class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </p>
                     {% endfor %}
                 </div>
             </div>
