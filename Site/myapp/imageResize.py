@@ -1,6 +1,7 @@
 from PIL import Image, ImageFilter
+from typing import Tuple
 
-def resize(img: Image, size: tuple[int, int]=(776, 344), blur_radius=6):
+def resize(img: Image, size: Tuple[int, int]=(776, 344), blur_radius=6):
     """Return `PIL.Image` of given :attr:`size` (default 1000x700) with bluring background"""
     imgW, imgH = img.size
     targetW, targetH = size

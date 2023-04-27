@@ -19,9 +19,7 @@ class QuizResource(Resource):
         abort_if_quiz_not_found(quiz_id)
         session = db_session.create_session()
         quiz = session.query(Quiz).get(quiz_id)
-        with open(quiz.content_file) as file:
-            return file
-        #return jsonify({'quiz': quiz.to_dict(only=('id', 'title', 'description', 'creator', 'type', 'modified_date', ...))})   оставляем нужные параметры
+        return quiz.as_dict()
 
     def delete(self, quiz_id):
         abort_if_quiz_not_found(quiz_id)
@@ -32,15 +30,18 @@ class QuizResource(Resource):
         return jsonify({'success': 'OK'})
 
 
+class QuizListTitles(Resource):
+    def get(self):
+        session = db_session.create_session()
+        data = session.query(Quiz.title, Quiz.id).all()
+        return jsonify(dict(data))
+
+
 class QuizListResource(Resource):
     def get(self):
-        # TODO: поиск всех файлом квизов в соответствующей папке
-        files = ['quiz_1.json']
-        json_file = {'quiz': []}
-        for name in files:
-            with open(name) as file:
-                json_file['quiz'].append(json.load(file))
-        return jsonify(json_file)
+        session = db_session.create_session()
+        quizzes = session.query(Quiz).all()
+        return jsonify([i.as_dict() for i in quizzes])
 
     def post(self):
         args = parser_quiz.parse_args()
