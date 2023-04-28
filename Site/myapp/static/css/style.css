@@ -46,6 +46,7 @@ body {
 .central_div {
     margin: 100px auto;
     width: clamp(500px, 50vw, 1000px);
+    text-align: center;
     overflow: visible;
 }
 

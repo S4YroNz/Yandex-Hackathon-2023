@@ -37,8 +37,7 @@
                         {{ error }}
                     </p>
                     {% endfor %}
-                    {{ form.repeat_password(class="input_padding", type="text", id="password2", placeholder="Повторите
-                    пароль") }}
+                    {{ form.repeat_password(class="input_padding", type="text", id="password2", placeholder="Повторите пароль") }}
                     {% for error in form.repeat_password.errors %}
                     <p class="alert alert-danger" role="alert">
                         {{ error }}
